@@ -1,51 +1,23 @@
 import profile from "../../assets/images/profile_fallback.png";
-import { bsIcons } from "../../global/icons";
+import { bsIcons, riIcons } from "../../global/icons";
 import userProfile from "../../assets/images/user.png";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useGetAgentSessions } from "../../services/chat/chat.hooks";
+import { formatDate } from "../../utils/dateFormatter";
+import { useAppStore } from "../../../store/appStore";
 const Sidebar = () => {
-  // Sample chat data - you can replace this with your actual data
-  const chats = [
-    {
-      id: 1,
-      name: "John Smith",
-      message: "Testing",
-      time: "08:21",
-      unread: 5,
-      avatar: profile,
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      message: "Hello there!",
-      time: "12:15",
-      unread: 2,
-      avatar: profile,
-    },
-    {
-      id: 3,
-      name: "Bob Johnson",
-      message: "How are you?",
-      time: "6:47",
-      unread: 0,
-      avatar: profile,
-    },
-    {
-      id: 4,
-      name: "Samantha Lee",
-      message: "See you tomorrow!",
-      time: "09:35",
-      unread: 0,
-      avatar: profile,
-    },
-    {
-      id: 5,
-      name: "William Chen",
-      message: "Thanks for your help!",
-      time: "5:22",
-      unread: 0,
-      avatar: profile,
-    },
-  ];
+  const [threeMenuClicked, setThreeMenuClicked] = useState(false);
+  const { data: agentSessions } = useGetAgentSessions();
+  const setClientId = useAppStore((state) => state.setClientId);
+  const navigate = useNavigate();
 
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    setTimeout(() => {
+      navigate("/");
+    }, 1000);
+  };
   return (
     <div className="w-[400px] h-screen bg-white border-r border-gray-300">
       {/* Header */}
@@ -57,10 +29,29 @@ const Sidebar = () => {
             className="w-full h-full p-1 object-cover bg-gray-300"
           />
         </div>
-        <div>
-          <button className="p-2 hover:bg-gray-200 rounded-full">
+        <div className="relative">
+          <button
+            onClick={() => setThreeMenuClicked(true)}
+            className="p-2 hover:bg-gray-200 rounded-full"
+          >
             <span className="h-20">{bsIcons.BsThreeDotsVertical}</span>
           </button>
+
+          {threeMenuClicked && (
+            <div className="absolute top-10 w-auto whitespace-nowrap  bg-white border border-gray-200 rounded-md shadow-lg z-20">
+              <ul>
+                <li
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 font-semibold hover:bg-gray-50 rounded-md  cursor-pointer"
+                >
+                  <span className="text-rose-700">
+                    {riIcons.RiLogoutCircleRLine}
+                  </span>{" "}
+                  Logout
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
@@ -83,28 +74,39 @@ const Sidebar = () => {
 
       {/* Chat List */}
       <div className="overflow-y-auto h-[calc(100vh-136px)]">
-        {chats.map((chat) => (
+        {agentSessions?.map((chat) => (
           <div
+            onClick={() => setClientId(chat.client_id)}
             key={chat.id}
             className="px-4 py-3 flex items-center border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
           >
             <div className="w-12 h-12 rounded-full overflow-hidden mr-3">
               <img
-                src={chat.avatar}
-                alt={chat.name}
+                src={profile}
+                alt={chat.client_name}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="flex-1">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold">{chat.name}</h3>
-                <span className="text-xs text-gray-500">{chat.time}</span>
+                <h3 className="font-semibold">{chat.client_name}</h3>
+                <span className="text-xs text-gray-500">
+                  {formatDate(chat.last_activity)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500 truncate">{chat.message}</p>
+                <p
+                  className={`text-sm truncate border rounded-md px-1 ${
+                    chat.status === "active"
+                      ? "text-green-500 bg-green-200 border-green-300"
+                      : "text-gray-500 bg-gray-200 border-gray-300"
+                  }`}
+                >
+                  {chat.status}
+                </p>
                 {chat.unread > 0 && (
-                  <span className="bg-cyan-800 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {chat.unread}
+                  <span className="bg-secondary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                    {chat.unread_count}
                   </span>
                 )}
               </div>
