@@ -1,10 +1,23 @@
-import React from "react";
+import { useEffect } from "react";
+import { useAppStore } from "../../store/appStore";
 import Conversation from "../components/chat/Conversation";
+import { useWebSocketConnection } from "../hooks/Websocket";
+import { toast, ToastContainer } from "react-toastify";
 
 const Home = () => {
+  const websocketNotification = useAppStore(
+    (state) => state.websocketNotification
+  );
+  useWebSocketConnection();
+  useEffect(() => {
+    if (websocketNotification) {
+      toast.info(websocketNotification);
+    }
+  }, [websocketNotification]);
   return (
-    <div className="bg-amber-100">
+    <div>
       <Conversation />
+      {/* <ToastContainer /> */}
     </div>
   );
 };

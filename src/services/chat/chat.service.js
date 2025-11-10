@@ -13,6 +13,10 @@ export const chatService = {
 
     getClientConversation: (client_id) => {
         return API.get(`${BASE_URL}/api/agent/clients/${client_id}/messages`);
-    }
+    }, 
+
+    sendMessageToClient: ({clientId, message})=>{
+        return API.post(`${BASE_URL}/api/agent/clients/${clientId}/send-message`, {text: message});    
+    },
 
 }

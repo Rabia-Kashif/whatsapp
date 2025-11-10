@@ -22,9 +22,9 @@ export const useGetAgentSessions = () => {
     })
 }
 
-export const useCloseChatSession = (session_id) => {
+export const useCloseChatSession = () => {
     return useMutation({
-        mutationFn: async () => {
+        mutationFn: async (session_id) => {
             try {
                 const response = await chatService.closeChatSession(session_id);
                 return response?.data;
@@ -42,7 +42,7 @@ export const useCloseChatSession = (session_id) => {
     })
 }
 
-export const useGetClientConversation = (client_id, options={}) => {
+export const useGetClientConversation = (client_id, options = {}) => {
     return useQuery({
         queryKey: ['client-conversation'],
         queryFn: async () => {
@@ -59,6 +59,26 @@ export const useGetClientConversation = (client_id, options={}) => {
             }
         },
         ...options,
+        retry: 2,
+        retryDelay: 1000,
+    })
+}
+
+export const useSendMessageToClient = () => {
+    return useMutation({
+        mutationFn: async (clientId, message) => {
+            try {
+                const response = await chatService.sendMessageToClient(clientId, message);
+                return response?.data;
+            }
+            catch (error) {
+                if (error?.response) {
+                    console.error('Response Status: ', error?.response?.status);
+                    console.error('Response Data: ', error?.response?.data);
+                }
+                throw error?.response?.data?.detail || error;
+            }
+        },
         retry: 2,
         retryDelay: 1000,
     })

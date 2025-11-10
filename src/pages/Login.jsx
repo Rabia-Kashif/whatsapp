@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "../services/auth/auth.hooks";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useAppStore } from "../../store/appStore";
 
 const schema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -12,6 +13,7 @@ const schema = z.object({
 
 const Login = () => {
   const { mutate: login, isLoading } = useLogin();
+  const setClientId = useAppStore((state) => state.setClientId);
   const navigate = useNavigate();
 
   const {
@@ -31,6 +33,7 @@ const Login = () => {
       onSuccess: () => {
         toast.success("Login Successfully!", {
           onClose: () => {
+            setClientId(null);
             navigate("/dashboard");
           },
         });

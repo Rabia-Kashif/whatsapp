@@ -4,6 +4,7 @@ import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import { ToastContainer } from "react-toastify";
 import { QueryProvider } from "./providers/QueryProvider";
+import Home from "./pages/Home";
 
 function App() {
   return (
@@ -21,7 +22,14 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<Layout />} />
+          <Route
+            path="/dashboard"
+            element={
+              <Layout>
+                <Home />
+              </Layout>
+            }
+          />
           {/* fallback to login for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

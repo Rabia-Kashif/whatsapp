@@ -1,12 +1,12 @@
 import Home from "../../pages/Home";
 import Sidebar from "./Sidebar";
 
-const Layout = () => {
+const Layout = ({children}) => {
   return (
     <div className="flex">
       <Sidebar />
       <main className="flex-1">
-        <Home />
+        {children}
       </main>
     </div>
   );

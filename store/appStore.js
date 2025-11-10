@@ -6,6 +6,18 @@ export const useAppStore = create(
         (set) => ({
             clientId: null,
             setClientId: (id) => set({ clientId: id }),
+
+            websocketClientMessage: null,
+            setWebsocketClientMessage: (message) => set({ websocketClientMessage: message }),
+
+            websocketNotification: null,
+            setWebsocketNotification: (notification) => set({ websocketNotification: notification }),
         })
-    )
+    ),
+    {
+        name: "whatsapp-store", //app store name for local storage
+        partialize: (state) => ({
+            clientId: state.clientId, //only these will be persisted
+        })
+    }
 )
