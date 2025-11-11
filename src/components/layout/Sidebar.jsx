@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useGetAgentSessions } from "../../services/chat/chat.hooks";
 import { formatDate } from "../../utils/dateFormatter";
 import { useAppStore } from "../../../store/appStore";
+import { toSentenceCase } from "../../utils/SentenceCase";
 const Sidebar = () => {
   const [threeMenuClicked, setThreeMenuClicked] = useState(false);
   const { data: agentSessions } = useGetAgentSessions();
@@ -78,35 +79,50 @@ const Sidebar = () => {
           <div
             onClick={() => setClientId(chat.client_id)}
             key={chat.id}
-            className="px-4 py-3 flex items-center border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
+            className="px-5 py-4 flex items-center border-b border-gray-200 hover:bg-linear-to-r hover:from-blue-50 hover:to-transparent cursor-pointer transition-all duration-200 group"
           >
-            <div className="w-12 h-12 rounded-full overflow-hidden mr-3">
-              <img
-                src={profile}
-                alt={chat.client_name}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative mr-4">
+              <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-gray-200 group-hover:ring-blue-400 transition-all">
+                <img
+                  src={profile}
+                  alt={chat.client_name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {chat.status === "active" && (
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+              )}
             </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">{chat.client_name}</h3>
-                <span className="text-xs text-gray-500">
+
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-baseline mb-1">
+                <h3 className="font-semibold text-gray-900 truncate pr-2">
+                  {chat.client_name}
+                </h3>
+                <span className="text-xs text-gray-500 whitespace-nowrap">
                   {formatDate(chat.last_activity)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <p
-                  className={`text-sm truncate border rounded-md px-1 ${
-                    chat.status === "active"
-                      ? "text-green-500 bg-green-200 border-green-300"
-                      : "text-gray-500 bg-gray-200 border-gray-300"
-                  }`}
-                >
-                  {chat.status}
-                </p>
-                {chat.unread > 0 && (
-                  <span className="bg-secondary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {chat.unread_count}
+
+              <div className="flex justify-between items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                      chat.status === "active"
+                        ? "text-green-700 bg-green-100"
+                        : "text-gray-600 bg-gray-100"
+                    }`}
+                  >
+                    {toSentenceCase(chat.status)}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-[#0F52BA]">
+                    {chat.total_sessions} session
+                    {chat.total_sessions !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {chat.unread_count > -1 && (
+                  <span className="bg-[#37a037] text-white rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-semibold shadow-sm">
+                    {chat.unread_count > 99 ? "99+" : chat.unread_count}
                   </span>
                 )}
               </div>

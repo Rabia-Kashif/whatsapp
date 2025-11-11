@@ -9,6 +9,9 @@ import {
 import profile from "../../assets/images/profile_fallback.png";
 import { formatDate } from "../../utils/dateFormatter";
 import { toast } from "react-toastify";
+import { grIcons } from "../../global/icons";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Conversation = () => {
   const clientId = useAppStore((state) => state.clientId);
@@ -21,12 +24,43 @@ const Conversation = () => {
 
   const [messages, setMessages] = useState([]);
   const [agentMessage, setAgentMessage] = useState("");
+  const [groupedMessages, setGroupedMessages] = useState({});
   const websocketClientMessage = useAppStore(
     (state) => state.websocketClientMessage
   );
 
-  console.log("WebSocket Client Message:", websocketClientMessage);
   const scrollRef = useRef(null);
+
+  const normalizeMessage = (rawMsg) => {
+    if (!rawMsg) return null;
+
+    try {
+      if (typeof rawMsg === "string") rawMsg = JSON.parse(rawMsg);
+      if (Array.isArray(rawMsg)) rawMsg = rawMsg[0];
+
+      return {
+        id: rawMsg.id || Date.now(),
+        session_id: rawMsg.session_id || null,
+        sender: rawMsg.sender || "unknown",
+        text: rawMsg.text || "",
+        media_url: rawMsg.media_url || "",
+        message_type: rawMsg.message_type || "text", // "text" | "image" | "video" | "audio"
+        timestamp: rawMsg.timestamp || new Date().toISOString(),
+      };
+    } catch (err) {
+      console.error("Invalid message:", err);
+      return null;
+    }
+  };
+
+  const groupMessagesBySession = (msgs) => {
+    return msgs.reduce((acc, msg) => {
+      const session = msg.session_id || "unknown";
+      if (!acc[session]) acc[session] = [];
+      acc[session].push(msg);
+      return acc;
+    }, {});
+  };
 
   // Update local messages whenever conversation changes
   useEffect(() => {
@@ -47,7 +81,23 @@ const Conversation = () => {
     if (clientId) refetchConversation();
   }, [clientId]);
 
-  // 🔹 Send message
+  // Append WebSocket message to local messages
+  useEffect(() => {
+    if (!websocketClientMessage) return;
+
+    const message = normalizeMessage(websocketClientMessage);
+    if (!message) return;
+
+    setMessages((prev) => [...prev, message]);
+  }, [websocketClientMessage]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setGroupedMessages(groupMessagesBySession(messages));
+    }
+  }, [messages]);
+
+  // Send message
   const handleSendMessageToClient = () => {
     const message = agentMessage.trim();
     if (!message) return;
@@ -121,42 +171,101 @@ const Conversation = () => {
         className="flex-1 overflow-y-auto p-6"
         style={{ backgroundColor: "#f2efe9" }}
       >
-        <div className="flex justify-center mb-4">
-          <div className="text-xs bg-white px-3 py-1 rounded-md text-gray-600">
-            TODAY
-          </div>
-        </div>
+        <div className="space-y-10 max-w-5xl mx-auto">
+          {Object.entries(groupedMessages).map(
+            ([sessionId, sessionMessages]) => (
+              <div key={sessionId}>
+                {/* 🔹 Session Header */}
+                <div className="flex justify-center mb-4">
+                  <div className="text-xs bg-white px-3 py-1 rounded-md text-gray-600">
+                    {formatDate(sessionMessages[0]?.timestamp)}
+                  </div>
+                </div>
 
-        <div className="space-y-6 max-w-5xl mx-auto">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${
-                m.sender === "agent" || m.sender === "system"
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
-            >
-              <div
-                className={`${
-                  m.sender === "agent" || m.sender === "system"
-                    ? "bg-primary text-white"
-                    : "bg-white text-gray-900"
-                } rounded-lg px-4 py-2 shadow-sm max-w-[70%]`}
-              >
-                <div className="text-sm">{m.text}</div>
-                <div className="text-xs text-gray-400 mt-1 text-right">
-                  {formatDate(m.timestamp)}
+                {/* 🔹 Session Messages */}
+                <div className="space-y-6">
+                  {sessionMessages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`flex ${
+                        m.sender === "agent" || m.sender === "system"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`${
+                          m.sender === "agent" || m.sender === "system"
+                            ? "bg-[#246588] text-white"
+                            : "bg-white text-gray-900"
+                        } rounded-lg px-4 py-2 shadow-sm max-w-[70%]`}
+                      >
+                        {/* Message Content Based on Type */}
+                        {m.message_type === "text" && (
+                          <div className="text-sm">{m.text}</div>
+                        )}
+
+                        {m.message_type === "image" && m.media_url && (
+                          <img
+                            src={
+                              m.media_url.includes("twilio.com")
+                                ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
+                                    m.media_url
+                                  )}`
+                                : m.media_url
+                            }
+                            alt="client attachment"
+                            className="rounded-lg max-w-full"
+                          />
+                        )}
+
+                        {m.message_type === "video" && m.media_url && (
+                          <video controls className="rounded-lg max-w-full">
+                            <source
+                              src={
+                                m.media_url.includes("twilio.com")
+                                  ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
+                                      m.media_url
+                                    )}`
+                                  : m.media_url
+                              }
+                              type="video/mp4"
+                            />
+                          </video>
+                        )}
+
+                        {m.message_type === "audio" && m.media_url && (
+                          <audio controls className="w-full mt-1">
+                            <source
+                              src={
+                                m.media_url.includes("twilio.com")
+                                  ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
+                                      m.media_url
+                                    )}`
+                                  : m.media_url
+                              }
+                              type="audio/mpeg"
+                            />
+                          </audio>
+                        )}
+
+                        <div className="text-xs text-gray-400 mt-1 text-right">
+                          {formatDate(m.timestamp)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 bg-white border-t border-gray-300">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+      <div className="flex items-center justify-start gap-4 px-12 py-3 bg-white border-t border-gray-300">
+        <p className="text-lg text-gray-700">{grIcons.GrAttachment}</p>
+        <div className="flex-1 max-w-3xl flex items-center gap-3">
           <input
             type="text"
             placeholder="Type a message here..."

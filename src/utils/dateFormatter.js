@@ -19,11 +19,19 @@ export const formatDate = (timestamp) => {
 
   if (isToday) {
     // Format like "10:45 AM"
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true, // ✅ ensures AM/PM
+    });
   } else if (isYesterday) {
     return "Yesterday";
   } else {
-    // Format like "12/03/2025"
-    return date.toLocaleDateString("en-GB");
+    // Format like "12/03/2025, 10:45 AM"
+    return `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })}`;
   }
 };
