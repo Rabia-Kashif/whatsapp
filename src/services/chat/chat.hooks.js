@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { chatService } from "./chat.service"
+import { queryClient } from "../../providers/queryClient";
 
 export const useGetAgentSessions = () => {
     return useQuery({
@@ -36,6 +37,9 @@ export const useCloseChatSession = () => {
                 }
                 throw error?.response?.data?.detail || error;
             }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['agent-sessions'])
         },
         retry: 2,
         retryDelay: 1000,

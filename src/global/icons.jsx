@@ -1,6 +1,8 @@
 import { BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { RiLogoutCircleRLine } from "react-icons/ri";
 import { GrAttachment } from "react-icons/gr";
+import { FaUser } from "react-icons/fa6";
+import { PiSignOutFill } from "react-icons/pi";
 
 const bsIcons = {
   BsThreeDotsVertical: <BsThreeDotsVertical />,
@@ -14,4 +16,12 @@ const riIcons = {
 const grIcons = {
   GrAttachment: <GrAttachment />,
 };
-export { bsIcons, riIcons, grIcons };
+
+const faIcons = {
+  FaUser: <FaUser />,
+};
+
+const piIcons = {
+  PiSignOutFill: <PiSignOutFill />,
+};
+export { bsIcons, riIcons, grIcons, faIcons, piIcons };

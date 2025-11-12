@@ -1,4 +1,5 @@
 import { useAppStore } from "../../store/appStore";
+import { useGetAgentSessions } from "../services/chat/chat.hooks";
 
 const maxReconnectAttempts = 5;
 const socketurl = import.meta.env.VITE_BASE_URL.replace(/^http/, "ws");
@@ -7,6 +8,7 @@ export const useWebSocketConnection = () => {
   const agentId = localStorage.getItem("agent_id");
   let reconnectAttempts = 0;
   const { setWebsocketClientMessage, setWebsocketNotification } = useAppStore();
+  const { refetch: reloadSessions } = useGetAgentSessions();
 
   if (!accessToken || !agentId) return;
   // const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -29,6 +31,7 @@ export const useWebSocketConnection = () => {
 
         try {
           const message = JSON.parse(event.data);
+          console.log("Message from websocket: ", message);
           if (message.type === "new_message") {
             setWebsocketClientMessage(message?.data);
           } else if (
@@ -39,6 +42,7 @@ export const useWebSocketConnection = () => {
           ) {
             setWebsocketNotification(message?.data?.message);
           }
+          reloadSessions();
         } catch (error) {
           console.error("❌ Error parsing websocket message:", error);
         }

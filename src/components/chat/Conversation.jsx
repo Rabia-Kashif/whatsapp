@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useLayoutEffect } from "react";
 import { FiSend } from "react-icons/fi";
 import { FaComments } from "react-icons/fa";
 import { useAppStore } from "../../../store/appStore";
 import {
+  useCloseChatSession,
   useGetClientConversation,
   useSendMessageToClient,
 } from "../../services/chat/chat.hooks";
@@ -11,24 +12,25 @@ import { formatDate } from "../../utils/dateFormatter";
 import { toast } from "react-toastify";
 import { grIcons } from "../../global/icons";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Conversation = () => {
-  const clientId = useAppStore((state) => state.clientId);
-
+  const { clientId, setClientId, setSessionStatus, sessionStatus } =
+    useAppStore();
   const { data: conversation, refetch: refetchConversation } =
     useGetClientConversation(clientId, {
       enabled: !!clientId,
     });
   const { mutate: sendMessageToClient } = useSendMessageToClient();
+  const { mutate: closeSession } = useCloseChatSession();
 
   const [messages, setMessages] = useState([]);
   const [agentMessage, setAgentMessage] = useState("");
   const [groupedMessages, setGroupedMessages] = useState({});
+
   const websocketClientMessage = useAppStore(
     (state) => state.websocketClientMessage
   );
-
   const scrollRef = useRef(null);
 
   const normalizeMessage = (rawMsg) => {
@@ -69,13 +71,6 @@ const Conversation = () => {
     }
   }, [conversation]);
 
-  // Auto-scroll to bottom when new messages appear
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   // When client changes, refetch once
   useEffect(() => {
     if (clientId) refetchConversation();
@@ -83,13 +78,27 @@ const Conversation = () => {
 
   // Append WebSocket message to local messages
   useEffect(() => {
-    if (!websocketClientMessage) return;
+    if (!websocketClientMessage || !conversation) return;
+
+    // Only append if it belongs to the same client
+    if (websocketClientMessage.client_phone !== conversation.client_phone)
+      return;
 
     const message = normalizeMessage(websocketClientMessage);
     if (!message) return;
 
     setMessages((prev) => [...prev, message]);
-  }, [websocketClientMessage]);
+
+    // Smooth scroll to latest message
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+  }, [websocketClientMessage, conversation]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -127,8 +136,34 @@ const Conversation = () => {
       }
     );
   };
+  useLayoutEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
 
-  if (!conversation) {
+  const handleSessionClose = (sessionId) => {
+    if (!sessionId) return;
+
+    console.log(sessionId);
+
+    closeSession(sessionId, {
+      onSuccess: () => {
+        toast.success("Session closed successfully!");
+        setClientId(null);
+        setSessionStatus("");
+        setMessages([]);
+      },
+      onError: (error) => {
+        toast.error(error || "Failed to close session! Please try again.");
+      },
+    });
+  };
+
+  if (!conversation || clientId === null) {
     return (
       <div className="flex-1 flex items-center justify-center h-screen bg-gray-50">
         <div id="noChatSelected" className="p-8 text-center">
@@ -163,14 +198,29 @@ const Conversation = () => {
             {conversation?.client_phone}
           </div>
         </div>
+        <div>
+          <button
+            onClick={() =>
+              handleSessionClose(
+                conversation?.messages[conversation?.messages.length - 1]
+                  ?.session_id
+              )
+            }
+            className={`${
+              sessionStatus === "closed" || sessionStatus === null
+                ? "bg-neutral-600 cursor-disabled"
+                : "bg-rose-700 cursor-pointer"
+            } rounded-lg px-2 py-1 text-white `}
+          >
+            {sessionStatus === "closed" || sessionStatus === null
+              ? "Session Closed"
+              : "Close Session"}
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6"
-        style={{ backgroundColor: "#f2efe9" }}
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-stone-100">
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
             ([sessionId, sessionMessages]) => (
@@ -198,7 +248,7 @@ const Conversation = () => {
                           m.sender === "agent" || m.sender === "system"
                             ? "bg-[#246588] text-white"
                             : "bg-white text-gray-900"
-                        } rounded-lg px-4 py-2 shadow-sm max-w-[70%]`}
+                        } rounded-lg px-4 py-2 shadow-sm max-w-[60%]`}
                       >
                         {/* Message Content Based on Type */}
                         {m.message_type === "text" && (
@@ -207,13 +257,9 @@ const Conversation = () => {
 
                         {m.message_type === "image" && m.media_url && (
                           <img
-                            src={
-                              m.media_url.includes("twilio.com")
-                                ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
-                                    m.media_url
-                                  )}`
-                                : m.media_url
-                            }
+                            src={`${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
+                              m.media_url
+                            )}`}
                             alt="client attachment"
                             className="rounded-lg max-w-full"
                           />
@@ -263,8 +309,8 @@ const Conversation = () => {
       </div>
 
       {/* Input */}
-      <div className="flex items-center justify-start gap-4 px-12 py-3 bg-white border-t border-gray-300">
-        <p className="text-lg text-gray-700">{grIcons.GrAttachment}</p>
+      <div className="flex items-center justify-start gap-4 px-12 py-3 h-16 bg-white border-t border-gray-300">
+        {/* <p className="text-lg text-gray-700">{grIcons.GrAttachment}</p> */}
         <div className="flex-1 max-w-3xl flex items-center gap-3">
           <input
             type="text"
