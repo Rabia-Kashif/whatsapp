@@ -7,6 +7,15 @@ import { QueryProvider } from "./providers/QueryProvider";
 import Home from "./pages/Home";
 
 function App() {
+  const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      return <Navigate to="/" replace />;
+    }
+
+    return children;
+  };
+
   return (
     <QueryProvider>
       <BrowserRouter>
@@ -22,12 +31,15 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Login />} />
+
           <Route
             path="/dashboard"
             element={
-              <Layout>
-                <Home />
-              </Layout>
+              <ProtectedRoute>
+                <Layout>
+                  <Home />
+                </Layout>
+              </ProtectedRoute>
             }
           />
           {/* fallback to login for unknown routes */}

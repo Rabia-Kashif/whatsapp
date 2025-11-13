@@ -7,7 +7,13 @@ export const useWebSocketConnection = () => {
   const accessToken = localStorage.getItem("auth_token");
   const agentId = localStorage.getItem("agent_id");
   let reconnectAttempts = 0;
-  const { setWebsocketClientMessage, setWebsocketNotification } = useAppStore();
+  const {
+    setWebsocketClientMessage,
+    setWebsocketNotification,
+    setSessionStatus,
+    setClientId,
+    clientId,
+  } = useAppStore();
   const { refetch: reloadSessions } = useGetAgentSessions();
 
   if (!accessToken || !agentId) return;
@@ -41,6 +47,13 @@ export const useWebSocketConnection = () => {
             message.type === "session_reminder_sent"
           ) {
             setWebsocketNotification(message?.data?.message);
+            if (message.type === "session_closed") {
+              setSessionStatus(null);
+              setClientId(null);
+            }
+            // else if (message.type === "session_assigned") {
+            //   setSessionStatus("active");
+            // }
           }
           reloadSessions();
         } catch (error) {

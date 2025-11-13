@@ -10,10 +10,10 @@ import {
 import profile from "../../assets/images/profile_fallback.png";
 import { formatDate } from "../../utils/dateFormatter";
 import { toast } from "react-toastify";
-import { grIcons } from "../../global/icons";
+import Modal from "../Modals/Modal";
+import CloseSessionAlert from "../Modals/CloseSessionAlert";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 const Conversation = () => {
   const { clientId, setClientId, setSessionStatus, sessionStatus } =
     useAppStore();
@@ -23,23 +23,38 @@ const Conversation = () => {
     });
   const { mutate: sendMessageToClient } = useSendMessageToClient();
   const { mutate: closeSession } = useCloseChatSession();
-
   const [messages, setMessages] = useState([]);
   const [agentMessage, setAgentMessage] = useState("");
   const [groupedMessages, setGroupedMessages] = useState({});
+  const [isSessionClose, setIsSessionClose] = useState(null);
 
   const websocketClientMessage = useAppStore(
     (state) => state.websocketClientMessage
   );
   const scrollRef = useRef(null);
-
+  const isInitialRender = useRef(true);
+  useLayoutEffect(() => {
+    if (!scrollRef.current) return;
+    // Instantly jump to bottom on first render
+    if (isInitialRender.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "auto", // no visible scroll
+      });
+      isInitialRender.current = false;
+    } else {
+      // Smooth scroll only for new messages (like websocket or sent)
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
   const normalizeMessage = (rawMsg) => {
     if (!rawMsg) return null;
-
     try {
       if (typeof rawMsg === "string") rawMsg = JSON.parse(rawMsg);
       if (Array.isArray(rawMsg)) rawMsg = rawMsg[0];
-
       return {
         id: rawMsg.id || Date.now(),
         session_id: rawMsg.session_id || null,
@@ -54,7 +69,6 @@ const Conversation = () => {
       return null;
     }
   };
-
   const groupMessagesBySession = (msgs) => {
     return msgs.reduce((acc, msg) => {
       const session = msg.session_id || "unknown";
@@ -63,7 +77,6 @@ const Conversation = () => {
       return acc;
     }, {});
   };
-
   // Update local messages whenever conversation changes
   useEffect(() => {
     if (conversation?.messages) {
@@ -79,16 +92,12 @@ const Conversation = () => {
   // Append WebSocket message to local messages
   useEffect(() => {
     if (!websocketClientMessage || !conversation) return;
-
     // Only append if it belongs to the same client
     if (websocketClientMessage.client_phone !== conversation.client_phone)
       return;
-
     const message = normalizeMessage(websocketClientMessage);
     if (!message) return;
-
     setMessages((prev) => [...prev, message]);
-
     // Smooth scroll to latest message
     setTimeout(() => {
       if (scrollRef.current) {
@@ -110,9 +119,7 @@ const Conversation = () => {
   const handleSendMessageToClient = () => {
     const message = agentMessage.trim();
     if (!message) return;
-
     const tempId = Date.now();
-
     // Show message instantly in UI
     const tempMsg = {
       id: tempId,
@@ -122,13 +129,15 @@ const Conversation = () => {
     };
     setMessages((prev) => [...prev, tempMsg]);
     setAgentMessage("");
-
     // API call
     sendMessageToClient(
       { clientId, message },
       {
         onSuccess: async () => {
           await refetchConversation(); // fetch latest updated conversation
+          if (sessionStatus === "closed") {
+            setSessionStatus("active");
+          }
         },
         onError: (error) => {
           toast.error(error || "Failed to send message. Please try again.");
@@ -136,33 +145,22 @@ const Conversation = () => {
       }
     );
   };
-  useLayoutEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [messages]);
-
   const handleSessionClose = (sessionId) => {
     if (!sessionId) return;
-
     console.log(sessionId);
-
     closeSession(sessionId, {
       onSuccess: () => {
         toast.success("Session closed successfully!");
         setClientId(null);
-        setSessionStatus("");
+        setSessionStatus(null);
         setMessages([]);
+        setIsSessionClose(null)
       },
       onError: (error) => {
         toast.error(error || "Failed to close session! Please try again.");
       },
     });
   };
-
   if (!conversation || clientId === null) {
     return (
       <div className="flex-1 flex items-center justify-center h-screen bg-gray-50">
@@ -178,7 +176,6 @@ const Conversation = () => {
       </div>
     );
   }
-
   return (
     <div className="flex-1 flex flex-col h-screen bg-gray-50">
       {/* Header */}
@@ -200,12 +197,12 @@ const Conversation = () => {
         </div>
         <div>
           <button
-            onClick={() =>
-              handleSessionClose(
+            onClick={() => {
+              setIsSessionClose(
                 conversation?.messages[conversation?.messages.length - 1]
                   ?.session_id
-              )
-            }
+              );
+            }}
             className={`${
               sessionStatus === "closed" || sessionStatus === null
                 ? "bg-neutral-600 cursor-disabled"
@@ -218,21 +215,19 @@ const Conversation = () => {
           </button>
         </div>
       </div>
-
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-stone-100">
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
             ([sessionId, sessionMessages]) => (
               <div key={sessionId}>
-                {/* 🔹 Session Header */}
+                {/* :small_blue_diamond: Session Header */}
                 <div className="flex justify-center mb-4">
                   <div className="text-xs bg-white px-3 py-1 rounded-md text-gray-600">
                     {formatDate(sessionMessages[0]?.timestamp)}
                   </div>
                 </div>
-
-                {/* 🔹 Session Messages */}
+                {/* :small_blue_diamond: Session Messages */}
                 <div className="space-y-6">
                   {sessionMessages.map((m) => (
                     <div
@@ -244,17 +239,16 @@ const Conversation = () => {
                       }`}
                     >
                       <div
-                        className={`${
+                        className={` ${
                           m.sender === "agent" || m.sender === "system"
-                            ? "bg-[#246588] text-white"
-                            : "bg-white text-gray-900"
-                        } rounded-lg px-4 py-2 shadow-sm max-w-[60%]`}
+                            ? "bg-[#3679e6] text-white"
+                            : "bg-[#71839b] text-white"
+                        } rounded-3xl min-w-32 px-4 py-3 shadow-sm max-w-[60%]`}
                       >
                         {/* Message Content Based on Type */}
                         {m.message_type === "text" && (
                           <div className="text-sm">{m.text}</div>
                         )}
-
                         {m.message_type === "image" && m.media_url && (
                           <img
                             src={`${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
@@ -264,7 +258,6 @@ const Conversation = () => {
                             className="rounded-lg max-w-full"
                           />
                         )}
-
                         {m.message_type === "video" && m.media_url && (
                           <video controls className="rounded-lg max-w-full">
                             <source
@@ -279,7 +272,6 @@ const Conversation = () => {
                             />
                           </video>
                         )}
-
                         {m.message_type === "audio" && m.media_url && (
                           <audio controls className="w-full mt-1">
                             <source
@@ -294,8 +286,7 @@ const Conversation = () => {
                             />
                           </audio>
                         )}
-
-                        <div className="text-xs text-gray-400 mt-1 text-right">
+                        <div className="text-xs text-gray-400 text-right">
                           {formatDate(m.timestamp)}
                         </div>
                       </div>
@@ -307,7 +298,6 @@ const Conversation = () => {
           )}
         </div>
       </div>
-
       {/* Input */}
       <div className="flex items-center justify-start gap-4 px-12 py-3 h-16 bg-white border-t border-gray-300">
         {/* <p className="text-lg text-gray-700">{grIcons.GrAttachment}</p> */}
@@ -328,8 +318,15 @@ const Conversation = () => {
           </button>
         </div>
       </div>
+      {isSessionClose !== null && (
+        <Modal open={isSessionClose} onClose={() => setIsSessionClose(null)}>
+          <CloseSessionAlert
+            onClose={() => setIsSessionClose(null)}
+            onSessionClose={() => handleSessionClose(isSessionClose)}
+          />
+        </Modal>
+      )}
     </div>
   );
 };
-
 export default Conversation;
