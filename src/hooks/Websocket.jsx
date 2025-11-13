@@ -1,96 +1,119 @@
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/appStore";
 import { useGetAgentSessions } from "../services/chat/chat.hooks";
+import { queryClient } from "../providers/queryClient";
 
 const maxReconnectAttempts = 5;
 const socketurl = import.meta.env.VITE_BASE_URL.replace(/^http/, "ws");
+
 export const useWebSocketConnection = () => {
   const accessToken = localStorage.getItem("auth_token");
   const agentId = localStorage.getItem("agent_id");
-  let reconnectAttempts = 0;
+
   const {
     setWebsocketClientMessage,
     setWebsocketNotification,
     setSessionStatus,
     setClientId,
-    clientId,
   } = useAppStore();
+
   const { refetch: reloadSessions } = useGetAgentSessions();
+  const reconnectAttempts = useRef(0);
+  const websocketRef = useRef(null);
 
-  if (!accessToken || !agentId) return;
-  // const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const websocketURL = `${socketurl}/ws/agent/${agentId}`;
-  let websocket;
+  useEffect(() => {
+    if (!accessToken || !agentId) return;
 
-  const connect = () => {
-    try {
-      websocket = new WebSocket(websocketURL);
+    const websocketURL = `${socketurl}/ws/agent/${agentId}`;
 
-      websocket.onopen = () => {
-        console.log("✅ WebSocket connection established");
-        // setConnectionStatus(true);
-        reconnectAttempts = 0; // reset reconnect attempts
-        websocket.send("ping");
-      };
+    const connect = () => {
+      try {
+        const ws = new WebSocket(websocketURL);
+        websocketRef.current = ws;
 
-      websocket.onmessage = (event) => {
-        if (event.data === "pong") return;
+        ws.onopen = () => {
+          console.log("✅ WebSocket connection established");
+          reconnectAttempts.current = 0;
+          ws.send("ping");
+        };
 
-        try {
-          const message = JSON.parse(event.data);
-          console.log("Message from websocket: ", message);
-          if (message.type === "new_message") {
-            setWebsocketClientMessage(message?.data);
-          } else if (
-            message.type === "session_assigned" ||
-            // message.type === "session_updated" ||
-            message.type === "session_closed" ||
-            message.type === "session_reminder_sent"
-          ) {
-            setWebsocketNotification(message?.data?.message);
-            if (message.type === "session_closed") {
-              setSessionStatus(null);
-              setClientId(null);
+        ws.onmessage = (event) => {
+          if (event.data === "pong") return;
+
+          try {
+            const message = JSON.parse(event.data);
+            console.log("📩 WebSocket Message:", message);
+
+            if (message.type === "new_message") {
+              setWebsocketClientMessage(message.data);
+            } else if (
+              [
+                "session_assigned",
+                "session_closed",
+                "session_reminder_sent",
+                "session_updated",
+              ].includes(message.type)
+            ) {
+              setWebsocketNotification(message.data?.message);
+
+              if (message.type === "session_closed") {
+                // Only clear if the closed session belongs to the current client
+                const closedClientId = message?.data?.client_id;
+                const currentClientId = useAppStore.getState().clientId;
+
+                if (closedClientId === currentClientId) {
+                  setSessionStatus(null);
+                  setClientId(null);
+                }
+              } else if (message.type === "session_assigned") {
+                setSessionStatus("active");
+              }
+
+              // reloadSessions();
+              queryClient.invalidateQueries(["agent-sessions"]);
             }
-            // else if (message.type === "session_assigned") {
-            //   setSessionStatus("active");
-            // }
+          } catch (error) {
+            console.error("❌ Error parsing WebSocket message:", error);
           }
-          reloadSessions();
-        } catch (error) {
-          console.error("❌ Error parsing websocket message:", error);
-        }
-      };
+        };
 
-      websocket.onclose = (event) => {
-        console.warn("⚠️ WebSocket disconnected:", event.code, event.reason);
-        // setConnectionStatus(false);
+        ws.onclose = (event) => {
+          console.warn("⚠️ WebSocket disconnected:", event.code, event.reason);
 
-        // try reconnect
-        if (reconnectAttempts < maxReconnectAttempts) {
-          const nextAttempt = reconnectAttempts + 1;
-          reconnectAttempts = nextAttempt;
+          if (reconnectAttempts.current < maxReconnectAttempts) {
+            reconnectAttempts.current++;
+            const delay = Math.min(
+              1000 * Math.pow(2, reconnectAttempts.current),
+              30000
+            );
 
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-          console.log(
-            `⏳ Reconnecting in ${delay}ms... (Attempt ${nextAttempt})`
-          );
+            console.log(
+              `⏳ Reconnecting in ${delay}ms (Attempt ${reconnectAttempts.current})`
+            );
 
-          setTimeout(() => {
-            connect(); // reconnect recursively
-          }, delay);
-        } else {
-          console.error("❌ Max reconnect attempts reached.");
-        }
-      };
+            setTimeout(connect, delay);
+          } else {
+            console.error("❌ Max reconnect attempts reached.");
+          }
+        };
 
-      websocket.onerror = (error) => {
-        console.error("⚠️ WebSocket error:", error);
-        websocket.close();
-      };
-    } catch (error) {
-      console.error("❌ Failed to create WebSocket:", error);
-      // setConnectionStatus(false);
-    }
-  };
-  connect(); // initial connection
+        ws.onerror = (error) => {
+          console.error("⚠️ WebSocket error:", error);
+          ws.close();
+        };
+      } catch (error) {
+        console.error("❌ Failed to create WebSocket:", error);
+      }
+    };
+
+    connect();
+
+    // ✅ Cleanup on unmount
+    return () => {
+      if (websocketRef.current) {
+        websocketRef.current.close();
+        console.log("🔌 WebSocket connection closed on unmount");
+      }
+    };
+  }, [accessToken, agentId]);
 };

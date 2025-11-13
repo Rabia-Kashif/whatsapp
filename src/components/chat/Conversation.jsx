@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useLayoutEffect } from "react";
-import { FiSend } from "react-icons/fi";
+import { FiSend, FiArrowDown } from "react-icons/fi";
 import { FaComments } from "react-icons/fa";
 import { useAppStore } from "../../../store/appStore";
 import {
@@ -14,42 +14,73 @@ import Modal from "../Modals/Modal";
 import CloseSessionAlert from "../Modals/CloseSessionAlert";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const Conversation = () => {
   const { clientId, setClientId, setSessionStatus, sessionStatus } =
     useAppStore();
   const { data: conversation, refetch: refetchConversation } =
-    useGetClientConversation(clientId, {
-      enabled: !!clientId,
-    });
+    useGetClientConversation(clientId, { enabled: !!clientId });
   const { mutate: sendMessageToClient } = useSendMessageToClient();
   const { mutate: closeSession } = useCloseChatSession();
+
   const [messages, setMessages] = useState([]);
   const [agentMessage, setAgentMessage] = useState("");
   const [groupedMessages, setGroupedMessages] = useState({});
   const [isSessionClose, setIsSessionClose] = useState(null);
+  const [showNewMessageAlert, setShowNewMessageAlert] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
 
   const websocketClientMessage = useAppStore(
     (state) => state.websocketClientMessage
   );
   const scrollRef = useRef(null);
   const isInitialRender = useRef(true);
+  const previousClientId = useRef(null);
+  const pendingMessageIds = useRef(new Set());
+
+  // Check if user is near bottom of scroll
+  const isNearBottom = () => {
+    if (!scrollRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    return scrollHeight - scrollTop - clientHeight < 100;
+  };
+
+  // Handle scroll detection
+  const handleScroll = () => {
+    const nearBottom = isNearBottom();
+    setIsUserScrolling(!nearBottom);
+    if (nearBottom) {
+      setShowNewMessageAlert(false);
+    }
+  };
+
+  // Scroll to bottom function
+  const scrollToBottom = (behavior = "smooth") => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior,
+    });
+    setShowNewMessageAlert(false);
+    setIsUserScrolling(false);
+  };
+
+  // Auto-scroll only on initial render or when sending messages
   useLayoutEffect(() => {
     if (!scrollRef.current) return;
-    // Instantly jump to bottom on first render
-    if (isInitialRender.current) {
+    
+    // Only auto-scroll if user is already at bottom or it's initial render
+    if (isInitialRender.current || !isUserScrolling) {
+      const behavior = isInitialRender.current ? "auto" : "smooth";
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: "auto", // no visible scroll
+        behavior,
       });
       isInitialRender.current = false;
-    } else {
-      // Smooth scroll only for new messages (like websocket or sent)
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
     }
   }, [messages]);
+
+  // Normalize + group messages
   const normalizeMessage = (rawMsg) => {
     if (!rawMsg) return null;
     try {
@@ -61,7 +92,7 @@ const Conversation = () => {
         sender: rawMsg.sender || "unknown",
         text: rawMsg.text || "",
         media_url: rawMsg.media_url || "",
-        message_type: rawMsg.message_type || "text", // "text" | "image" | "video" | "audio"
+        message_type: rawMsg.message_type || "text",
         timestamp: rawMsg.timestamp || new Date().toISOString(),
       };
     } catch (err) {
@@ -69,44 +100,75 @@ const Conversation = () => {
       return null;
     }
   };
-  const groupMessagesBySession = (msgs) => {
-    return msgs.reduce((acc, msg) => {
+
+  const groupMessagesBySession = (msgs) =>
+    msgs.reduce((acc, msg) => {
       const session = msg.session_id || "unknown";
       if (!acc[session]) acc[session] = [];
       acc[session].push(msg);
       return acc;
     }, {});
-  };
-  // Update local messages whenever conversation changes
+
+  // Update messages when conversation changes
   useEffect(() => {
     if (conversation?.messages) {
+      // Remove any pending temp messages when real messages arrive
+      const realMessageIds = new Set(conversation.messages.map(m => m.id));
+      pendingMessageIds.current.forEach(tempId => {
+        if (!realMessageIds.has(tempId)) {
+          pendingMessageIds.current.delete(tempId);
+        }
+      });
+      
       setMessages(conversation.messages);
     }
   }, [conversation]);
 
-  // When client changes, refetch once
+  // Handle client change from sidebar
   useEffect(() => {
-    if (clientId) refetchConversation();
-  }, [clientId]);
+    if (clientId !== previousClientId.current) {
+      // Reset scroll state when switching clients
+      isInitialRender.current = true;
+      setIsUserScrolling(false);
+      setShowNewMessageAlert(false);
+      pendingMessageIds.current.clear();
+      previousClientId.current = clientId;
+      
+      if (clientId) {
+        refetchConversation();
+      }
+    }
+  }, [clientId, refetchConversation]);
 
-  // Append WebSocket message to local messages
+  // Websocket incoming message
   useEffect(() => {
     if (!websocketClientMessage || !conversation) return;
-    // Only append if it belongs to the same client
     if (websocketClientMessage.client_phone !== conversation.client_phone)
       return;
+    
     const message = normalizeMessage(websocketClientMessage);
     if (!message) return;
-    setMessages((prev) => [...prev, message]);
-    // Smooth scroll to latest message
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: "smooth",
-        });
+
+    // Check if message already exists (including temp messages)
+    setMessages((prev) => {
+      const messageExists = prev.some(m => 
+        m.id === message.id || 
+        (m.text === message.text && m.sender === message.sender && 
+         Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 2000)
+      );
+      
+      if (messageExists) return prev;
+      
+      // Show "new message" alert if user is scrolled up
+      if (!isNearBottom() && message.sender !== "agent") {
+        setShowNewMessageAlert(true);
+      } else {
+        // Auto-scroll if user is at bottom
+        setTimeout(() => scrollToBottom("smooth"), 100);
       }
-    }, 100);
+      
+      return [...prev, message];
+    });
   }, [websocketClientMessage, conversation]);
 
   useEffect(() => {
@@ -115,56 +177,79 @@ const Conversation = () => {
     }
   }, [messages]);
 
-  // Send message
+  // Handle send message
   const handleSendMessageToClient = () => {
+    if (!agentMessage.trim()) return;
+    
     const message = agentMessage.trim();
     if (!message) return;
-    const tempId = Date.now();
-    // Show message instantly in UI
+
+    const tempId = `temp_${Date.now()}`;
     const tempMsg = {
       id: tempId,
       sender: "agent",
       text: message,
       timestamp: new Date().toISOString(),
+      session_id: conversation?.messages?.[conversation?.messages.length - 1]?.session_id
     };
+
+    // Track this as a pending message
+    pendingMessageIds.current.add(tempId);
+    
+    // Add temp message to UI
     setMessages((prev) => [...prev, tempMsg]);
     setAgentMessage("");
-    // API call
+    
+    // Force scroll to bottom when sending
+    setIsUserScrolling(false);
+    setTimeout(() => scrollToBottom("smooth"), 50);
+
     sendMessageToClient(
       { clientId, message },
       {
         onSuccess: async () => {
-          await refetchConversation(); // fetch latest updated conversation
-          if (sessionStatus === "closed") {
-            setSessionStatus("active");
-          }
+          // Wait a bit for websocket message, then refetch to sync
+          setTimeout(async () => {
+            pendingMessageIds.current.delete(tempId);
+            await refetchConversation();
+          }, 500);
+          
+          if (sessionStatus === "closed") setSessionStatus("active");
         },
         onError: (error) => {
+          // Remove temp message on error
+          setMessages((prev) => prev.filter(m => m.id !== tempId));
+          pendingMessageIds.current.delete(tempId);
           toast.error(error || "Failed to send message. Please try again.");
         },
       }
     );
   };
+
+  // Handle close session
   const handleSessionClose = (sessionId) => {
     if (!sessionId) return;
-    console.log(sessionId);
+    setSessionStatus("closing");
+
     closeSession(sessionId, {
       onSuccess: () => {
         toast.success("Session closed successfully!");
         setClientId(null);
-        setSessionStatus(null);
+        setSessionStatus("closed");
         setMessages([]);
-        setIsSessionClose(null)
+        setIsSessionClose(null);
       },
       onError: (error) => {
         toast.error(error || "Failed to close session! Please try again.");
+        setSessionStatus("active");
       },
     });
   };
+
   if (!conversation || clientId === null) {
     return (
       <div className="flex-1 flex items-center justify-center h-screen bg-gray-50">
-        <div id="noChatSelected" className="p-8 text-center">
+        <div className="p-8 text-center">
           <FaComments className="text-gray-300 text-6xl mb-4 mx-auto" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No Client Selected
@@ -176,8 +261,11 @@ const Conversation = () => {
       </div>
     );
   }
+
+  const isClosable = sessionStatus === "active";
+
   return (
-    <div className="flex-1 flex flex-col h-screen bg-gray-50">
+    <div className="flex-1 flex flex-col h-screen bg-neutral-400">
       {/* Header */}
       <div className="flex items-center px-4 py-3 bg-gray-100 border-b border-gray-300">
         <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -195,39 +283,42 @@ const Conversation = () => {
             {conversation?.client_phone}
           </div>
         </div>
-        <div>
-          <button
-            onClick={() => {
-              setIsSessionClose(
-                conversation?.messages[conversation?.messages.length - 1]
-                  ?.session_id
-              );
-            }}
-            className={`${
-              sessionStatus === "closed" || sessionStatus === null
-                ? "bg-neutral-600 cursor-disabled"
-                : "bg-rose-700 cursor-pointer"
-            } rounded-lg px-2 py-1 text-white `}
-          >
-            {sessionStatus === "closed" || sessionStatus === null
-              ? "Session Closed"
-              : "Close Session"}
-          </button>
-        </div>
+
+        <button
+          onClick={() => {
+            if (!isClosable) return;
+            setIsSessionClose(
+              conversation?.messages?.[conversation?.messages.length - 1]
+                ?.session_id
+            );
+          }}
+          disabled={!isClosable}
+          className={`${
+            isClosable
+              ? "bg-rose-700 hover:bg-rose-800 cursor-pointer"
+              : "bg-neutral-500 cursor-not-allowed"
+          } rounded-lg px-3 py-1 text-white transition`}
+        >
+          {isClosable ? "Close Session" : "Session Closed"}
+        </button>
       </div>
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-stone-100">
+      <div 
+        ref={scrollRef} 
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-6 bg-stone-100 relative"
+      >
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
             ([sessionId, sessionMessages]) => (
               <div key={sessionId}>
-                {/* :small_blue_diamond: Session Header */}
                 <div className="flex justify-center mb-4">
                   <div className="text-xs bg-white px-3 py-1 rounded-md text-gray-600">
                     {formatDate(sessionMessages[0]?.timestamp)}
                   </div>
                 </div>
-                {/* :small_blue_diamond: Session Messages */}
+
                 <div className="space-y-6">
                   {sessionMessages.map((m) => (
                     <div
@@ -239,13 +330,12 @@ const Conversation = () => {
                       }`}
                     >
                       <div
-                        className={` ${
+                        className={`${
                           m.sender === "agent" || m.sender === "system"
-                            ? "bg-[#3679e6] text-white"
-                            : "bg-[#71839b] text-white"
-                        } rounded-3xl min-w-32 px-4 py-3 shadow-sm max-w-[60%]`}
+                            ? "bg-[#0277BD] text-white"
+                            : "bg-[#ffffff] text-black"
+                        }  rounded-3xl min-w-32 px-4 py-3 shadow-sm max-w-[60%]`}
                       >
-                        {/* Message Content Based on Type */}
                         {m.message_type === "text" && (
                           <div className="text-sm">{m.text}</div>
                         )}
@@ -286,7 +376,7 @@ const Conversation = () => {
                             />
                           </audio>
                         )}
-                        <div className="text-xs text-gray-400 text-right">
+                        <div className="text-xs text-gray-300 text-right mt-1">
                           {formatDate(m.timestamp)}
                         </div>
                       </div>
@@ -297,29 +387,47 @@ const Conversation = () => {
             )
           )}
         </div>
+
+        {/* New Message Alert - WhatsApp Style */}
+        {showNewMessageAlert && (
+          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-10">
+            <button
+              onClick={() => scrollToBottom("smooth")}
+              className="bg-white shadow-lg rounded-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50 transition-all border border-gray-200"
+            >
+              <FiArrowDown className="text-green-600" />
+              <span className="text-sm font-medium text-gray-700">New message</span>
+            </button>
+          </div>
+        )}
       </div>
+
       {/* Input */}
       <div className="flex items-center justify-start gap-4 px-12 py-3 h-16 bg-white border-t border-gray-300">
-        {/* <p className="text-lg text-gray-700">{grIcons.GrAttachment}</p> */}
         <div className="flex-1 max-w-3xl flex items-center gap-3">
           <input
             type="text"
             placeholder="Type a message here..."
             value={agentMessage}
             onChange={(e) => setAgentMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSendMessageToClient()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessageToClient();
+              }
+            }}
             className="flex-1 border rounded-full px-4 py-2 outline-none border-gray-300 bg-gray-100"
           />
           <button
             onClick={handleSendMessageToClient}
-            className="p-2 cursor-pointer bg-secondary hover:bg-secondary-dark text-white rounded-full"
+            className="p-2 rounded-full text-white bg-secondary hover:bg-secondary-dark transition"
           >
             <FiSend />
           </button>
         </div>
       </div>
+
       {isSessionClose !== null && (
-        <Modal open={isSessionClose} onClose={() => setIsSessionClose(null)}>
+        <Modal open={!!isSessionClose} onClose={() => setIsSessionClose(null)}>
           <CloseSessionAlert
             onClose={() => setIsSessionClose(null)}
             onSessionClose={() => handleSessionClose(isSessionClose)}
@@ -329,4 +437,5 @@ const Conversation = () => {
     </div>
   );
 };
+
 export default Conversation;

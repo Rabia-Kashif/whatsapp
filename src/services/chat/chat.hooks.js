@@ -63,6 +63,7 @@ export const useGetClientConversation = (client_id, options = {}) => {
             }
         },
         ...options,
+        enabled: !!client_id,
         retry: 2,
         retryDelay: 1000,
     })
