@@ -1,20 +1,20 @@
 const LogoutAlertModal = ({ onClose, onLogout }) => {
   return (
     <div className="flex items-center justify-center h-screen ">
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 xl:w-[28vw] lg:w-[42vw] md:w-[52vw] w-[72vw] h-auto p-8 rounded-2xl bg-white text-theme-black">
-        <h1 className="text-center mb-6 text-2xl font-[500] text-theme-black">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 xl:w-[28vw] lg:w-[42vw] md:w-[52vw] w-[72vw] h-auto p-8 rounded-2xl bg-white text-text">
+        <h1 className="text-center mb-6 text-2xl font-[500] text-text">
           Are you sure you want to Logout?
         </h1>
         <div className="flex flex-row justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2 mr-4 text-center text-base rounded-md cursor-pointer text-gray-600 border border-stroke"
+            className="min-w-26 px-6 py-2 mr-4 text-center text-base rounded-md cursor-pointer text-text border border-stroke"
           >
             Cancel
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center justify-center px-6 py-2 text-center text-base cursor-pointer rounded-md text-white bg-[#246588]"
+            className="flex items-center justify-center min-w-26 px-6 py-2 text-center text-base cursor-pointer rounded-md text-white bg-[#65bba7]"
           >
             <span>Logout</span>
           </button>

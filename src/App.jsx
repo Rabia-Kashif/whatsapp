@@ -5,12 +5,16 @@ import Login from "./pages/Login";
 import { ToastContainer } from "react-toastify";
 import { QueryProvider } from "./providers/QueryProvider";
 import Home from "./pages/Home";
+import { isMobileDevice } from "./utils/deviceCheck";
 
 function App() {
   const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem("auth_token");
     if (!token) {
       return <Navigate to="/" replace />;
+    }
+    if (isMobileDevice()) {
+      return <Navigate to="mobile-not-supported" replace />;
     }
 
     return children;

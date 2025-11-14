@@ -8,7 +8,7 @@ import {
   useSendMessageToClient,
 } from "../../services/chat/chat.hooks";
 import profile from "../../assets/images/profile_fallback.png";
-import { formatDate } from "../../utils/dateFormatter";
+import { formatDate, formatTimeOnly } from "../../utils/dateFormatter";
 import { toast } from "react-toastify";
 import Modal from "../Modals/Modal";
 import CloseSessionAlert from "../Modals/CloseSessionAlert";
@@ -68,7 +68,7 @@ const Conversation = () => {
   // Auto-scroll only on initial render or when sending messages
   useLayoutEffect(() => {
     if (!scrollRef.current) return;
-    
+
     // Only auto-scroll if user is already at bottom or it's initial render
     if (isInitialRender.current || !isUserScrolling) {
       const behavior = isInitialRender.current ? "auto" : "smooth";
@@ -113,13 +113,13 @@ const Conversation = () => {
   useEffect(() => {
     if (conversation?.messages) {
       // Remove any pending temp messages when real messages arrive
-      const realMessageIds = new Set(conversation.messages.map(m => m.id));
-      pendingMessageIds.current.forEach(tempId => {
+      const realMessageIds = new Set(conversation.messages.map((m) => m.id));
+      pendingMessageIds.current.forEach((tempId) => {
         if (!realMessageIds.has(tempId)) {
           pendingMessageIds.current.delete(tempId);
         }
       });
-      
+
       setMessages(conversation.messages);
     }
   }, [conversation]);
@@ -133,7 +133,7 @@ const Conversation = () => {
       setShowNewMessageAlert(false);
       pendingMessageIds.current.clear();
       previousClientId.current = clientId;
-      
+
       if (clientId) {
         refetchConversation();
       }
@@ -145,20 +145,23 @@ const Conversation = () => {
     if (!websocketClientMessage || !conversation) return;
     if (websocketClientMessage.client_phone !== conversation.client_phone)
       return;
-    
+
     const message = normalizeMessage(websocketClientMessage);
     if (!message) return;
 
     // Check if message already exists (including temp messages)
     setMessages((prev) => {
-      const messageExists = prev.some(m => 
-        m.id === message.id || 
-        (m.text === message.text && m.sender === message.sender && 
-         Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 2000)
+      const messageExists = prev.some(
+        (m) =>
+          m.id === message.id ||
+          (m.text === message.text &&
+            m.sender === message.sender &&
+            Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) <
+              2000)
       );
-      
+
       if (messageExists) return prev;
-      
+
       // Show "new message" alert if user is scrolled up
       if (!isNearBottom() && message.sender !== "agent") {
         setShowNewMessageAlert(true);
@@ -166,7 +169,7 @@ const Conversation = () => {
         // Auto-scroll if user is at bottom
         setTimeout(() => scrollToBottom("smooth"), 100);
       }
-      
+
       return [...prev, message];
     });
   }, [websocketClientMessage, conversation]);
@@ -180,7 +183,7 @@ const Conversation = () => {
   // Handle send message
   const handleSendMessageToClient = () => {
     if (!agentMessage.trim()) return;
-    
+
     const message = agentMessage.trim();
     if (!message) return;
 
@@ -190,16 +193,17 @@ const Conversation = () => {
       sender: "agent",
       text: message,
       timestamp: new Date().toISOString(),
-      session_id: conversation?.messages?.[conversation?.messages.length - 1]?.session_id
+      session_id:
+        conversation?.messages?.[conversation?.messages.length - 1]?.session_id,
     };
 
     // Track this as a pending message
     pendingMessageIds.current.add(tempId);
-    
+
     // Add temp message to UI
     setMessages((prev) => [...prev, tempMsg]);
     setAgentMessage("");
-    
+
     // Force scroll to bottom when sending
     setIsUserScrolling(false);
     setTimeout(() => scrollToBottom("smooth"), 50);
@@ -213,12 +217,12 @@ const Conversation = () => {
             pendingMessageIds.current.delete(tempId);
             await refetchConversation();
           }, 500);
-          
+
           if (sessionStatus === "closed") setSessionStatus("active");
         },
         onError: (error) => {
           // Remove temp message on error
-          setMessages((prev) => prev.filter(m => m.id !== tempId));
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
           pendingMessageIds.current.delete(tempId);
           toast.error(error || "Failed to send message. Please try again.");
         },
@@ -248,13 +252,13 @@ const Conversation = () => {
 
   if (!conversation || clientId === null) {
     return (
-      <div className="flex-1 flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex-1 flex items-center justify-center h-screen bg-bg">
         <div className="p-8 text-center">
-          <FaComments className="text-gray-300 text-6xl mb-4 mx-auto" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <FaComments className="text-text text-6xl mb-4 mx-auto" />
+          <h3 className="text-lg font-medium text-text mb-2">
             No Client Selected
           </h3>
-          <p className="text-gray-500">
+          <p className="text-text">
             Select a client from the left sidebar to view conversation
           </p>
         </div>
@@ -265,9 +269,9 @@ const Conversation = () => {
   const isClosable = sessionStatus === "active";
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-neutral-400">
+    <div className="flex-1 flex flex-col h-screen bg-bg">
       {/* Header */}
-      <div className="flex items-center px-4 py-3 bg-gray-100 border-b border-gray-300">
+      <div className="flex items-center px-4 py-3 bg-bg border-b border-border">
         <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
           <img
             src={profile}
@@ -276,12 +280,10 @@ const Conversation = () => {
           />
         </div>
         <div className="flex-1">
-          <div className="text-sm font-semibold">
+          <div className="text-sm font-semibold text-text">
             {conversation?.client_name || "Unknown"}
           </div>
-          <div className="text-xs text-gray-500">
-            {conversation?.client_phone}
-          </div>
+          <div className="text-xs text-text">{conversation?.client_phone}</div>
         </div>
 
         <button
@@ -295,7 +297,7 @@ const Conversation = () => {
           disabled={!isClosable}
           className={`${
             isClosable
-              ? "bg-rose-700 hover:bg-rose-800 cursor-pointer"
+              ? "bg-close-btn hover:bg-close-btn-hovered cursor-pointer"
               : "bg-neutral-500 cursor-not-allowed"
           } rounded-lg px-3 py-1 text-white transition`}
         >
@@ -304,17 +306,17 @@ const Conversation = () => {
       </div>
 
       {/* Messages */}
-      <div 
-        ref={scrollRef} 
+      <div
+        ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-6 bg-stone-100 relative"
+        className="flex-1 overflow-y-auto p-6 bg-bg relative"
       >
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
             ([sessionId, sessionMessages]) => (
               <div key={sessionId}>
                 <div className="flex justify-center mb-4">
-                  <div className="text-xs bg-white px-3 py-1 rounded-md text-gray-600">
+                  <div className="text-xs bg-stone-100 shadow px-3 py-1 rounded-md text-gray-600">
                     {formatDate(sessionMessages[0]?.timestamp)}
                   </div>
                 </div>
@@ -332,9 +334,9 @@ const Conversation = () => {
                       <div
                         className={`${
                           m.sender === "agent" || m.sender === "system"
-                            ? "bg-[#0277BD] text-white"
-                            : "bg-[#ffffff] text-black"
-                        }  rounded-3xl min-w-32 px-4 py-3 shadow-sm max-w-[60%]`}
+                            ? "bg-chat-agent text-text"
+                            : "bg-chat-client text-text"
+                        }  rounded-xl min-w-32 px-3 py-2 shadow-sm max-w-[60%]`}
                       >
                         {m.message_type === "text" && (
                           <div className="text-sm">{m.text}</div>
@@ -376,8 +378,8 @@ const Conversation = () => {
                             />
                           </audio>
                         )}
-                        <div className="text-xs text-gray-300 text-right mt-1">
-                          {formatDate(m.timestamp)}
+                        <div className="text-xs text-gray-400 text-right mt-1">
+                          {formatTimeOnly(m.timestamp)}
                         </div>
                       </div>
                     </div>
@@ -396,15 +398,17 @@ const Conversation = () => {
               className="bg-white shadow-lg rounded-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50 transition-all border border-gray-200"
             >
               <FiArrowDown className="text-green-600" />
-              <span className="text-sm font-medium text-gray-700">New message</span>
+              <span className="text-sm font-medium text-gray-700">
+                New message
+              </span>
             </button>
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="flex items-center justify-start gap-4 px-12 py-3 h-16 bg-white border-t border-gray-300">
-        <div className="flex-1 max-w-3xl flex items-center gap-3">
+      <div className="flex items-center justify-center gap-4 px-12 py-3 h-16 bg-bg ">
+        <div className="flex-1 max-w-[90%] flex items-center gap-3">
           <input
             type="text"
             placeholder="Type a message here..."
@@ -415,11 +419,11 @@ const Conversation = () => {
                 handleSendMessageToClient();
               }
             }}
-            className="flex-1 border rounded-full px-4 py-2 outline-none border-gray-300 bg-gray-100"
+            className="flex-1 border-2 rounded-full px-4 py-2 outline-none text-text border-border bg-transparent"
           />
           <button
             onClick={handleSendMessageToClient}
-            className="p-2 rounded-full text-white bg-secondary hover:bg-secondary-dark transition"
+            className="p-2 rounded-full text-white bg-send-btn hover:bg-send-btn-hovered transition"
           >
             <FiSend />
           </button>

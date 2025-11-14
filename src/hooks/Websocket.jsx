@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/appStore";
-import { useGetAgentSessions } from "../services/chat/chat.hooks";
 import { queryClient } from "../providers/queryClient";
 
 const maxReconnectAttempts = 5;
@@ -17,7 +16,7 @@ export const useWebSocketConnection = () => {
     setClientId,
   } = useAppStore();
 
-  const { refetch: reloadSessions } = useGetAgentSessions();
+
   const reconnectAttempts = useRef(0);
   const websocketRef = useRef(null);
 

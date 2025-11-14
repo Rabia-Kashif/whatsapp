@@ -34,7 +34,7 @@ const Sidebar = () => {
         .includes(searchTerm.toString().toLowerCase())
   );
   return (
-    <div className="relative w-[400px] h-screen bg-white border-r border-gray-300">
+    <div className="relative w-[400px] h-screen bg-bg border-r border-border">
       {/* Search Bar */}
       <div className="px-4 py-3">
         <div className="relative">
@@ -42,10 +42,10 @@ const Sidebar = () => {
             type="text"
             placeholder="Search or start new chat"
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-200 py-2 pl-10 pr-4 rounded-lg outline-none"
+            className="w-full bg-border py-2 pl-10 pr-4 rounded-lg outline-none"
           />
           <p
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text"
             size={16}
           >
             {bsIcons.BsSearch}
@@ -64,11 +64,11 @@ const Sidebar = () => {
               }}
               key={chat.id}
               className={`${
-                clientId === chat.client_id && "bg-[#f0f5f8]"
-              } px-5 py-4 flex items-center border-b border-gray-200 hover:bg-linear-to-r hover:from-blue-50 hover:to-transparent cursor-pointer transition-all duration-200 group`}
+                clientId === chat.client_id && "bg-[#fbf7ee]"
+              } px-5 py-4 flex items-center text-text border-b border-border hover:bg-[#f8f0e0] cursor-pointer transition-all duration-200 group`}
             >
               <div className="relative mr-4">
-                <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-gray-200 group-hover:ring-[#4c73ad] transition-all">
+                <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-stone-200 group-hover:ring-border transition-all">
                   <img
                     src={profile}
                     alt={chat.client_name}
@@ -76,16 +76,16 @@ const Sidebar = () => {
                   />
                 </div>
                 {chat.status === "active" && (
-                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-status rounded-full border-2 border-white"></div>
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="font-semibold text-gray-900 truncate pr-2">
+                  <h3 className="font-semibold text-text truncate pr-2">
                     {chat.client_name}
                   </h3>
-                  <span className="text-xs text-gray-500 whitespace-nowrap">
+                  <span className="text-xs text-text whitespace-nowrap">
                     {formatDate(chat.last_activity)}
                   </span>
                 </div>
@@ -95,19 +95,19 @@ const Sidebar = () => {
                     <span
                       className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
                         chat.status === "active"
-                          ? "text-green-700 bg-green-100"
-                          : "text-gray-600 bg-gray-200"
+                          ? "text-status bg-green-50"
+                          : "text-gray-400 bg-gray-100"
                       }`}
                     >
                       {toSentenceCase(chat.status)}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-[#0F52BA]">
+                    <span className="flex items-center gap-1 text-xs text-session">
                       {chat.total_sessions} session
                       {chat.total_sessions !== 1 ? "s" : ""}
                     </span>
                   </div>
                   {chat.unread_count > 0 && (
-                    <span className="bg-[#37a037] text-white rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-semibold shadow-sm">
+                    <span className="bg-status text-white rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-semibold shadow-sm">
                       {chat.unread_count > 99 ? "99+" : chat.unread_count}
                     </span>
                   )}
@@ -122,9 +122,9 @@ const Sidebar = () => {
         )}
       </div>
       {/* Header */}
-      <div className="absolute bottom-0 w-full h-16 px-4 flex items-center justify-between border-t border-gray-300 bg-gray-100">
+      <div className="absolute bottom-0 w-full h-16 px-4 flex items-center justify-between text-text border-t border-border bg-bg">
         <div className="flex items-center gap-2 ">
-          <span className="rounded-full overflow-hidden bg-gray-200 p-2">
+          <span className="rounded-full overflow-hidden text-text bg-chat-client border border-border p-2">
             {" "}
             {faIcons.FaUser}
           </span>{" "}
@@ -135,7 +135,7 @@ const Sidebar = () => {
           <button
             onClick={() => setIsLogout(true)}
             title="Logout"
-            className="flex items-center gap-2 px-4 py-2 text-xl rounded-md text-gray-800 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 text-xl rounded-md text-text cursor-pointer"
           >
             {piIcons.PiSignOutFill}
           </button>

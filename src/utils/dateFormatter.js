@@ -35,3 +35,22 @@ export const formatDate = (timestamp) => {
     })}`;
   }
 };
+
+export const formatTimeOnly = (timestamp) => {
+  if (!timestamp) return "";
+
+  const cleanTimestamp = timestamp.split(".")[0];
+  const date = new Date(cleanTimestamp);
+
+  if (isNaN(date)) return "";
+
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  hours = hours % 12 || 12;    // convert to 12-hr
+  minutes = String(minutes).padStart(2, "0");
+
+  return `${hours}:${minutes} ${ampm}`;
+};
