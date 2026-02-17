@@ -8,13 +8,13 @@ const LogoutAlertModal = ({ onClose, onLogout }) => {
         <div className="flex flex-row justify-center">
           <button
             onClick={onClose}
-            className="min-w-26 px-6 py-2 mr-4 text-center text-base rounded-md cursor-pointer text-text border border-stroke"
+            className="min-w-26 px-6 py-2 mr-4 text-center text-base rounded-md cursor-pointer text-text border border-stroke hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center justify-center min-w-26 px-6 py-2 text-center text-base cursor-pointer rounded-md text-white bg-[#65bba7]"
+            className="flex items-center justify-center min-w-26 px-6 py-2 text-center text-base cursor-pointer rounded-md text-white bg-red-600 hover:bg-red-700"
           >
             <span>Logout</span>
           </button>

@@ -19,7 +19,13 @@ function App() {
 
     return children;
   };
-
+  const RedirectToDashboard = () => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <Login />;
+  };
   return (
     <QueryProvider>
       <BrowserRouter>
@@ -34,7 +40,7 @@ function App() {
         />
 
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<RedirectToDashboard />} />
 
           <Route
             path="/dashboard"

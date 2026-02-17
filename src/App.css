@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-text: #503C25;
+  --color-text: #503c25;
   --color-bg: #fffdf1;
   --color-border: #f4eacc;
   --color-close-btn: #d35b5b;
   --color-close-btn-hovered: #e66767;
   --color-session: #d35b5b;
-  --color-chat-agent: #ebf3ea;
-  --color-chat-client: #f8ebca;
+  --color-chat-agent: #f8ebca;
+  --color-chat-client: #ebf3ea;
   --color-send-btn: #84bfb1;
   --color-status: #65bba7;
   --color-send-btn-hovered: #65bba7;

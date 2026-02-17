@@ -12,7 +12,7 @@ import { formatDate, formatTimeOnly } from "../../utils/dateFormatter";
 import { toast } from "react-toastify";
 import Modal from "../Modals/Modal";
 import CloseSessionAlert from "../Modals/CloseSessionAlert";
-
+import chatBg from "../../assets/images/chat-bg.png";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const Conversation = () => {
@@ -31,7 +31,7 @@ const Conversation = () => {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
   const websocketClientMessage = useAppStore(
-    (state) => state.websocketClientMessage
+    (state) => state.websocketClientMessage,
   );
   const scrollRef = useRef(null);
   const isInitialRender = useRef(true);
@@ -124,6 +124,15 @@ const Conversation = () => {
     }
   }, [conversation]);
 
+  // Scroll to bottom on first conversation load
+  useEffect(() => {
+    if (conversation?.messages?.length > 0) {
+      setTimeout(() => {
+        scrollToBottom("auto");
+      }, 50);
+    }
+  }, [conversation]);
+
   // Handle client change from sidebar
   useEffect(() => {
     if (clientId !== previousClientId.current) {
@@ -157,7 +166,7 @@ const Conversation = () => {
           (m.text === message.text &&
             m.sender === message.sender &&
             Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) <
-              2000)
+              2000),
       );
 
       if (messageExists) return prev;
@@ -170,7 +179,9 @@ const Conversation = () => {
         setTimeout(() => scrollToBottom("smooth"), 100);
       }
 
-      return [...prev, message];
+      return prev
+        .filter((m) => !pendingMessageIds.current.has(m.id)) // remove temp
+        .concat(message); // add real message
     });
   }, [websocketClientMessage, conversation]);
 
@@ -201,7 +212,13 @@ const Conversation = () => {
     pendingMessageIds.current.add(tempId);
 
     // Add temp message to UI
-    setMessages((prev) => [...prev, tempMsg]);
+    setMessages((prev) => {
+      const exists = prev.some(
+        (m) => m.text === tempMsg.text && m.sender === "agent",
+      );
+      if (exists) return prev;
+      return [...prev, tempMsg];
+    });
     setAgentMessage("");
 
     // Force scroll to bottom when sending
@@ -226,7 +243,7 @@ const Conversation = () => {
           pendingMessageIds.current.delete(tempId);
           toast.error(error || "Failed to send message. Please try again.");
         },
-      }
+      },
     );
   };
 
@@ -269,7 +286,9 @@ const Conversation = () => {
   const isClosable = sessionStatus === "active";
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-bg">
+    <div
+      className="flex-1 flex flex-col h-screen bg-bg"
+    >
       {/* Header */}
       <div className="flex items-center px-4 py-3 bg-bg border-b border-border">
         <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -291,7 +310,7 @@ const Conversation = () => {
             if (!isClosable) return;
             setIsSessionClose(
               conversation?.messages?.[conversation?.messages.length - 1]
-                ?.session_id
+                ?.session_id,
             );
           }}
           disabled={!isClosable}
@@ -308,8 +327,9 @@ const Conversation = () => {
       {/* Messages */}
       <div
         ref={scrollRef}
+        style={{ backgroundImage: `url(${chatBg})`, backgroundSize: "contain", backgroundRepeat: "repeat" }}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-6 bg-bg relative"
+        className="flex-1 h-full w-full overflow-y-auto p-6 bg-bg relative"
       >
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
@@ -344,7 +364,7 @@ const Conversation = () => {
                         {m.message_type === "image" && m.media_url && (
                           <img
                             src={`${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
-                              m.media_url
+                              m.media_url,
                             )}`}
                             alt="client attachment"
                             className="rounded-lg max-w-full"
@@ -356,7 +376,7 @@ const Conversation = () => {
                               src={
                                 m.media_url.includes("twilio.com")
                                   ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
-                                      m.media_url
+                                      m.media_url,
                                     )}`
                                   : m.media_url
                               }
@@ -370,7 +390,7 @@ const Conversation = () => {
                               src={
                                 m.media_url.includes("twilio.com")
                                   ? `${BASE_URL}/api/proxy-media?url=${encodeURIComponent(
-                                      m.media_url
+                                      m.media_url,
                                     )}`
                                   : m.media_url
                               }
@@ -386,7 +406,7 @@ const Conversation = () => {
                   ))}
                 </div>
               </div>
-            )
+            ),
           )}
         </div>
 

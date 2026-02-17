@@ -17,6 +17,19 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("agent_id");
+    // Reset in-memory state
+    useAppStore.setState({
+      clientId: null,
+      sessionStatus: "",
+      websocketClientMessage: null,
+      websocketNotification: null,
+    });
+
+    // Clear persisted storage
+    useAppStore.persist.clearStorage();
+
     setTimeout(() => {
       navigate("/");
     }, 1000);
@@ -31,7 +44,7 @@ const Sidebar = () => {
       chat.total_sessions
         .toString()
         .toLowerCase()
-        .includes(searchTerm.toString().toLowerCase())
+        .includes(searchTerm.toString().toLowerCase()),
   );
   return (
     <div className="relative w-[400px] h-screen bg-bg border-r border-border">
