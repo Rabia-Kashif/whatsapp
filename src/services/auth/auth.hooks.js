@@ -1,34 +1,45 @@
 import { useMutation } from "@tanstack/react-query"
 import { authService } from "./auth.service"
 
-export const useLogin = () => {
+export const useAgentLogin = () => {
     return useMutation({
-        mutationFn: async (data) => {
+        mutationFn: async (userData) => {
             try {
-                const response = await authService.login(data);
-                return response?.data;
-            }
-            catch (error) {
-                if (error.response) {
-                    console.error('Response Status: ', error?.response?.status);
-                    console.error('Response Data: ', error?.response?.data);
-                }
-                throw error?.response?.data?.detail || error;
+                const response = await authService.agentLogin(userData);
+                return response;
+            } catch (error) {
+                throw error?.response?.data?.detail || error.message;
             }
         },
-        onSuccess: async (data) => {
-            const token = data?.access_token;
-            const username = data?.username;
-            const agentId = data?.agent_id;
-            if (token) {
-                try {
-                    localStorage.setItem('auth_token', token);
-                    localStorage.setItem('agent_id', agentId);
-                    localStorage.setItem('username', username);
-                } catch (error) {
-                    console.error('Error storing user data: ', error);
-                }
+        onSuccess: (data) => {
+            const { access_token, agent_id, email, role} = data?.data || {};
+            if (access_token) {
+                localStorage.setItem("auth_token", access_token);
+                localStorage.setItem("agent_id", agent_id);
+                localStorage.setItem("email", email);
+                localStorage.setItem("role", role);
             }
-        }
-    })
-}
+        },
+    });
+};
+export const useAdminLogin = () => {
+    return useMutation({
+        mutationFn: async (userData) => {
+            try {
+                const response = await authService.adminLogin(userData);
+                return response;
+            } catch (error) {
+                throw error?.response?.data?.detail || error.message;
+            }
+        },
+        onSuccess: (data) => {
+            const { access_token, email, role} = data?.data || {};
+            if (access_token) {
+                localStorage.setItem("auth_token", access_token);
+                localStorage.setItem("email", email);
+                localStorage.setItem("role", role);
+            }
+        },
+    });
+};
+

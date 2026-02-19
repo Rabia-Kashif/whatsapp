@@ -1,14 +1,14 @@
-import profile from "../../assets/images/profile_fallback.png";
-import { bsIcons, faIcons, piIcons } from "../../global/icons";
+import profile from "../../../assets/images/profile_fallback.png";
+import { bsIcons, faIcons, piIcons } from "../../../global/icons";
 import { useNavigate } from "react-router-dom";
-import { useGetAgentSessions } from "../../services/chat/chat.hooks";
-import { formatDate } from "../../utils/dateFormatter";
+import { useGetAgentSessions } from "../../../services/chat/chat.hooks";
+import { formatDate } from "../../../utils/dateFormatter";
 import { useAppStore } from "../../../store/appStore";
-import { toSentenceCase } from "../../utils/SentenceCase";
+import { toSentenceCase } from "../../../utils/SentenceCase";
 import { useState } from "react";
-import Modal from "../Modals/Modal";
-import LogoutAlertModal from "../Modals/LogoutAlertModal";
-const Sidebar = () => {
+import Modal from "../../Modals/Modal";
+import LogoutAlertModal from "../../Modals/LogoutAlertModal";
+const ChatDashboardSidebar = () => {
   const { data: agentSessions } = useGetAgentSessions();
   const { clientId, setClientId, setSessionStatus } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,8 +17,9 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
-    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     localStorage.removeItem("agent_id");
+    localStorage.removeItem("role");
     // Reset in-memory state
     useAppStore.setState({
       clientId: null,
@@ -141,7 +142,7 @@ const Sidebar = () => {
             {" "}
             {faIcons.FaUser}
           </span>{" "}
-          {localStorage.getItem("username")}
+          {localStorage.getItem("email")}
         </div>
 
         <div className="whitespace-nowrap">
@@ -168,4 +169,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default ChatDashboardSidebar;

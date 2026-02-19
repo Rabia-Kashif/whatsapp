@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useAppStore } from "../../store/appStore";
+import { useAppStore } from "../store/appStore";
 import { queryClient } from "../providers/queryClient";
 
 const maxReconnectAttempts = 5;
@@ -15,7 +15,6 @@ export const useWebSocketConnection = () => {
     setSessionStatus,
     setClientId,
   } = useAppStore();
-
 
   const reconnectAttempts = useRef(0);
   const websocketRef = useRef(null);
@@ -83,11 +82,11 @@ export const useWebSocketConnection = () => {
             reconnectAttempts.current++;
             const delay = Math.min(
               1000 * Math.pow(2, reconnectAttempts.current),
-              30000
+              30000,
             );
 
             console.log(
-              `⏳ Reconnecting in ${delay}ms (Attempt ${reconnectAttempts.current})`
+              `⏳ Reconnecting in ${delay}ms (Attempt ${reconnectAttempts.current})`,
             );
 
             setTimeout(connect, delay);

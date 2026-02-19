@@ -3,6 +3,7 @@ import { RiLogoutCircleRLine } from "react-icons/ri";
 import { GrAttachment } from "react-icons/gr";
 import { FaUser } from "react-icons/fa6";
 import { PiSignOutFill } from "react-icons/pi";
+import { MdSupportAgent } from "react-icons/md";
 
 const bsIcons = {
   BsThreeDotsVertical: <BsThreeDotsVertical />,
@@ -24,4 +25,8 @@ const faIcons = {
 const piIcons = {
   PiSignOutFill: <PiSignOutFill />,
 };
-export { bsIcons, riIcons, grIcons, faIcons, piIcons };
+
+const mdIcons = {
+  MdSupportAgent: <MdSupportAgent />,
+};
+export { bsIcons, riIcons, grIcons, faIcons, piIcons, mdIcons };

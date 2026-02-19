@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useLayoutEffect } from "react";
 import { FiSend, FiArrowDown } from "react-icons/fi";
 import { FaComments } from "react-icons/fa";
-import { useAppStore } from "../../../store/appStore";
+import { useAppStore } from "../../store/appStore";
 import {
   useCloseChatSession,
   useGetClientConversation,
@@ -286,9 +286,7 @@ const Conversation = () => {
   const isClosable = sessionStatus === "active";
 
   return (
-    <div
-      className="flex-1 flex flex-col h-screen bg-bg"
-    >
+    <div className="flex-1 flex flex-col h-screen bg-bg">
       {/* Header */}
       <div className="flex items-center px-4 py-3 bg-bg border-b border-border">
         <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -327,7 +325,11 @@ const Conversation = () => {
       {/* Messages */}
       <div
         ref={scrollRef}
-        style={{ backgroundImage: `url(${chatBg})`, backgroundSize: "contain", backgroundRepeat: "repeat" }}
+        style={{
+          backgroundImage: `url(${chatBg})`,
+          backgroundSize: "contain",
+          backgroundRepeat: "repeat",
+        }}
         onScroll={handleScroll}
         className="flex-1 h-full w-full overflow-y-auto p-6 bg-bg relative"
       >

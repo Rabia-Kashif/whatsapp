@@ -1,45 +1,74 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLogin } from "../services/auth/auth.hooks";
+import { useAdminLogin, useAgentLogin } from "../services/auth/auth.hooks";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "../../store/appStore";
-
+import { useAppStore } from "../store/appStore";
+import { useState } from "react";
+import { ClipLoader } from "react-spinners";
 const schema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.email({ message: "Please enter valid email address" }).toLowerCase(),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const Login = () => {
-  const { mutate: login, isLoading } = useLogin();
+  const [loginType, setLoginType] = useState("agent");
+  const { mutate: agentLogin, isPending: isAgentPending } = useAgentLogin();
+  const { mutate: adminLogin, isPending: isAdminPending } = useAdminLogin();
   const setClientId = useAppStore((state) => state.setClientId);
+  const [formError, setFormError] = useState("");
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange",
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
 
-  const onSubmit = (data) => {
-    login(data, {
+  const onSubmit = (data, event) => {
+    if (event) event.preventDefault();
+
+    setFormError("");
+    console.log("Form Data: ", data, loginType);
+    const mutationFn = loginType === "agent" ? agentLogin : adminLogin;
+
+    if (!mutationFn) return;
+
+    mutationFn(data, {
       onSuccess: () => {
-        toast.success("Login Successfully!", {
-          onClose: () => {
-            setClientId(null);
-            navigate("/dashboard");
+        toast.success(
+          `${loginType === "agent" ? "Agent" : "Admin"} Logged in successfully!`,
+          {
+            autoClose: 3000,
+            onClose: () => {
+              if (loginType === "agent") {
+                setClientId(null);
+                navigate("/chat-dashboard");
+              } else {
+                navigate("/admin-dashboard");
+              }
+            },
           },
-        });
+        );
       },
       onError: (error) => {
-        toast.error(error || "Login failed. Please try again.");
+        if (error?.response?.status === 401) {
+          setFormError(
+            error || "Incorrect email or password. Please try again.",
+          );
+        } else if (error?.response?.status === 500) {
+          setFormError("Server error. Please try again later.");
+        } else {
+          setFormError("Something went wrong. Please try again.");
+        }
       },
     });
   };
@@ -53,26 +82,28 @@ const Login = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <label className="block text-sm font-medium text-gray-700">
-            Username
+            Email
           </label>
           <input
-            {...register("username")}
+            {...register("email", {
+              onChange: () => setFormError(""),
+            })}
             className={`mt-1 block w-full rounded-md border px-3 py-2 bg-white focus:outline-none ${
-              errors.username ? "border-red-500" : "border-gray-300"
+              errors.email ? "border-red-500" : "border-gray-300"
             }`}
-            placeholder="Enter username"
+            placeholder="Enter email"
           />
-          {errors.username && (
-            <p className="text-sm text-red-600 mt-1">
-              {errors.username.message}
-            </p>
+          {errors.email && (
+            <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
           )}
 
           <label className="block text-sm font-medium text-gray-700 mt-4">
             Password
           </label>
           <input
-            {...register("password")}
+            {...register("password", {
+              onChange: () => setFormError(""),
+            })}
             type="password"
             className={`mt-1 block w-full rounded-md border px-3 py-2 bg-white focus:outline-none ${
               errors.password ? "border-red-500" : "border-gray-300"
@@ -84,13 +115,53 @@ const Login = () => {
               {errors.password.message}
             </p>
           )}
-
+          {/* User Type Option */}
+          <div className="py-4">
+            <label className="block text-[18px] font-medium text-theme-black mb-2">
+              Login as
+            </label>
+            <div className="flex items-center space-x-6">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  value="admin"
+                  checked={loginType === "admin"}
+                  onChange={(e) => setLoginType(e.target.value)}
+                  className="h-4 w-4 text-[#336699] focus:ring-[#336699]"
+                />
+                <span>Admin</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  value="agent"
+                  checked={loginType === "agent"}
+                  onChange={(e) => setLoginType(e.target.value)}
+                  className="h-4 w-4 text-[#336699] focus:ring-[#336699]"
+                />
+                <span>Agent</span>
+              </label>
+            </div>
+          </div>
+          {formError && (
+            <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-3 rounded-md text-sm">
+              {formError}
+            </div>
+          )}
           <button
             type="submit"
-            disabled={isLoading}
-            className="mt-6 w-full bg-[#246588] text-white py-2 rounded-md disabled:opacity-60"
+            disabled={!isValid || isAgentPending || isAdminPending}
+            className={`w-full py-3 text-white text-base font-medium rounded-md flex items-center justify-center transition-colors hover:opacity-90`}
+            style={{
+              backgroundColor: isValid ? "#336699" : "#ADC2D6",
+              cursor: isValid ? "pointer" : "not-allowed",
+            }}
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isAgentPending || isAdminPending ? (
+              <ClipLoader color="#fff" size={20} />
+            ) : (
+              `Login as ${loginType === "admin" ? "Admin" : "Agent"}`
+            )}
           </button>
         </form>
       </div>

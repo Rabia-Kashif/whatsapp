@@ -1,29 +1,38 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/layout/Layout";
-import Login from "./pages/Login";
 import { ToastContainer } from "react-toastify";
 import { QueryProvider } from "./providers/QueryProvider";
-import Home from "./pages/Home";
-import { isMobileDevice } from "./utils/deviceCheck";
-
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import ChatLayout from "./components/layout/chat-layout/Layout";
+import ChatDashboard from "./pages/ChatDashbaord";
+import DashboardLayout from "./components/layout/admin-layout/DashboardLayout";
+import Agents from "./modules/Agents/pages/Agents";
 function App() {
-  const ProtectedRoute = ({ children }) => {
+  const ProtectedRoute = ({ children, allowedRole }) => {
     const token = localStorage.getItem("auth_token");
+    const role = localStorage.getItem("role");
+
     if (!token) {
       return <Navigate to="/" replace />;
     }
-    if (isMobileDevice()) {
-      return <Navigate to="mobile-not-supported" replace />;
+
+    if (allowedRole && role !== allowedRole) {
+      return <Navigate to="/" replace />;
     }
 
     return children;
   };
   const RedirectToDashboard = () => {
     const token = localStorage.getItem("auth_token");
+    const role = localStorage.getItem("role");
+
     if (token) {
-      return <Navigate to="/dashboard" replace />;
+      if (role === "admin") {
+        return <Navigate to="/admin-dashboard" replace />;
+      }
+      return <Navigate to="/chat-dashboard" replace />;
     }
+
     return <Login />;
   };
   return (
@@ -42,16 +51,33 @@ function App() {
         <Routes>
           <Route path="/" element={<RedirectToDashboard />} />
 
+          {/* Admin Dashboard Route */}
           <Route
-            path="/dashboard"
+            path="/admin-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <Home />
-                </Layout>
+              <ProtectedRoute allowedRole="admin">
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            {/* Default redirect */}
+            <Route index element={<Navigate to="agents" replace />} />
+
+            <Route path="agents" element={<Agents />} />
+          </Route>
+
+          {/* Agent Dashboard Route */}
+          <Route
+            path="/chat-dashboard"
+            element={
+              <ProtectedRoute allowedRole="agent">
+                <ChatLayout>
+                  <ChatDashboard />
+                </ChatLayout>
               </ProtectedRoute>
             }
           />
+
           {/* fallback to login for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
