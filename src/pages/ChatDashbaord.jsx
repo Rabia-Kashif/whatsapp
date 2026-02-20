@@ -14,12 +14,7 @@ const ChatDashboard = () => {
       toast.info(websocketNotification);
     }
   }, [websocketNotification]);
-  return (
-    <div>
-      <Conversation />
-      {/* <ToastContainer /> */}
-    </div>
-  );
+  return <Conversation />;
 };
 
 export default ChatDashboard;

@@ -286,7 +286,7 @@ const Conversation = () => {
   const isClosable = sessionStatus === "active";
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-bg">
+    <div className="flex flex-col h-screen bg-bg">
       {/* Header */}
       <div className="flex items-center px-4 py-3 bg-bg border-b border-border">
         <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -331,7 +331,7 @@ const Conversation = () => {
           backgroundRepeat: "repeat",
         }}
         onScroll={handleScroll}
-        className="flex-1 h-full w-full overflow-y-auto p-6 bg-bg relative"
+        className="flex-1 h-full w-full overflow-y-auto p-6 bg-bg relative lg:pb-6 pb-24"
       >
         <div className="space-y-10 max-w-5xl mx-auto">
           {Object.entries(groupedMessages).map(
@@ -358,7 +358,7 @@ const Conversation = () => {
                           m.sender === "agent" || m.sender === "system"
                             ? "bg-chat-agent text-text"
                             : "bg-chat-client text-text"
-                        }  rounded-xl min-w-32 px-3 py-2 shadow-sm max-w-[60%]`}
+                        }  rounded-xl min-w-32 px-3 py-2 shadow-sm max-w-[80%] lg:max-w-[60%]`}
                       >
                         {m.message_type === "text" && (
                           <div className="text-sm">{m.text}</div>
@@ -429,7 +429,7 @@ const Conversation = () => {
       </div>
 
       {/* Input */}
-      <div className="flex items-center justify-center gap-4 px-12 py-3 h-16 bg-bg ">
+      <div className="fixed bottom-0 left-0 right-0 lg:relative flex items-center justify-center gap-4 px-12 py-3 h-16 bg-bg border-t border-border">
         <div className="flex-1 max-w-[90%] flex items-center gap-3">
           <input
             type="text"

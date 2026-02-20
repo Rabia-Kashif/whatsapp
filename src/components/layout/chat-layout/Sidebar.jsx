@@ -8,7 +8,7 @@ import { toSentenceCase } from "../../../utils/SentenceCase";
 import { useState } from "react";
 import Modal from "../../Modals/Modal";
 import LogoutAlertModal from "../../Modals/LogoutAlertModal";
-const ChatDashboardSidebar = () => {
+const ChatDashboardSidebar = ({ onClose }) => {
   const { data: agentSessions } = useGetAgentSessions();
   const { clientId, setClientId, setSessionStatus } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,16 +47,29 @@ const ChatDashboardSidebar = () => {
         .toLowerCase()
         .includes(searchTerm.toString().toLowerCase()),
   );
+
   return (
-    <div className="relative w-[400px] h-screen bg-bg border-r border-border">
+    <div className="relative h-screen w-64 lg:w-auto flex flex-col  bg-bg border-r border-border">
+      <div className="flex items-center justify-between py-4 px-5 border-b">
+        <p className="text-lg font-semibold text-text">FSD Monitoring</p>
+
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 rounded-md text-text transition"
+          >
+            ✕
+          </button>
+        )}
+      </div>
       {/* Search Bar */}
-      <div className="px-4 py-3">
-        <div className="relative">
+      <div className="flex-1 px-6 py-3">
+        <div className="relative ">
           <input
             type="text"
             placeholder="Search or start new chat"
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-border py-2 pl-10 pr-4 rounded-lg outline-none"
+            className="w-full bg-border py-2 pl-10 pr-4 rounded-lg max-lg:text-sm outline-none text-text placeholder:text-text"
           />
           <p
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text"
@@ -79,7 +92,7 @@ const ChatDashboardSidebar = () => {
               key={chat.id}
               className={`${
                 clientId === chat.client_id && "bg-[#fbf7ee]"
-              } px-5 py-4 flex items-center text-text border-b border-border hover:bg-[#f8f0e0] cursor-pointer transition-all duration-200 group`}
+              } px-5 py-4 max-lg:text-sm flex items-center text-text border-b border-border hover:bg-[#f8f0e0] cursor-pointer transition-all duration-200 group`}
             >
               <div className="relative mr-4">
                 <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-stone-200 group-hover:ring-border transition-all">
@@ -137,7 +150,7 @@ const ChatDashboardSidebar = () => {
       </div>
       {/* Header */}
       <div className="absolute bottom-0 w-full h-16 px-4 flex items-center justify-between text-text border-t border-border bg-bg">
-        <div className="flex items-center gap-2 ">
+        <div className="flex items-center gap-2 max-lg:text-sm ">
           <span className="rounded-full overflow-hidden text-text bg-chat-client border border-border p-2">
             {" "}
             {faIcons.FaUser}
@@ -149,7 +162,7 @@ const ChatDashboardSidebar = () => {
           <button
             onClick={() => setIsLogout(true)}
             title="Logout"
-            className="flex items-center gap-2 px-4 py-2 text-xl rounded-md text-text cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 text-sm lg:text-xl rounded-md text-text cursor-pointer"
           >
             {piIcons.PiSignOutFill}
           </button>

@@ -39,7 +39,6 @@ const AdminLayoutSidebar = ({ onClose }) => {
           </button>
         )}
       </div>
-
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
@@ -77,7 +76,6 @@ const AdminLayoutSidebar = ({ onClose }) => {
           })}
         </ul>
       </nav>
-
       {/* Logout Section */}
       <div className="p-4 border-t border-gray-100">
         <div

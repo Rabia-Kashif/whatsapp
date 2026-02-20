@@ -3,7 +3,7 @@ import { ToastContainer } from "react-toastify";
 import { QueryProvider } from "./providers/QueryProvider";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import ChatLayout from "./components/layout/chat-layout/Layout";
+import ChatLayout from "./components/layout/chat-layout/ChatLayout";
 import ChatDashboard from "./pages/ChatDashbaord";
 import DashboardLayout from "./components/layout/admin-layout/DashboardLayout";
 import Agents from "./modules/Agents/pages/Agents";
@@ -71,12 +71,15 @@ function App() {
             path="/chat-dashboard"
             element={
               <ProtectedRoute allowedRole="agent">
-                <ChatLayout>
-                  <ChatDashboard />
-                </ChatLayout>
+                <ChatLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            {/* Default redirect */}
+            <Route index element={<Navigate to="sessions" replace />} />
+
+            <Route path="sessions" element={<ChatDashboard />} />
+          </Route>
 
           {/* fallback to login for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
