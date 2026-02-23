@@ -30,13 +30,6 @@ const Agents = () => {
     );
   }
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="p-6">
-        <p className="text-gray-500">No agents found.</p>
-      </div>
-    );
-  }
 
   const handleDelete = () => {
     if (!selectedRecord) return;
@@ -94,46 +87,59 @@ const Agents = () => {
           </thead>
 
           <tbody>
-            {data.map((agent) => (
-              <tr
-                key={agent.id}
-                className="border-t border-gray-200 hover:bg-gray-50 transition"
-              >
-                <td className="px-4 py-3 text-sm text-gray-700">{agent.id}</td>
-                <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                  {agent.name}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {agent.email}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-[#336699]/10 text-[#336699]">
-                    {agent.agent_type}
-                  </span>
-                </td>
-                <td className="py-4 px-6  flex justify-start  gap-3">
-                  <button
-                    className="cursor-pointer text-gray-600 hover:text-gray-800"
-                    onClick={() => {
-                      setSelectedRecord(agent);
-                      setAgentModalMode("edit");
-                      setOpenAgentModal(true);
-                    }}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    className="cursor-pointer text-red-600 hover:text-red-800"
-                    onClick={() => {
-                      setSelectedRecord(agent);
-                      setOpenDeleteModal(true);
-                    }}
-                  >
-                    <Trash className="w-4 h-4" />
-                  </button>
+            {data.length > 0 ? (
+              data.map((agent) => (
+                <tr
+                  key={agent.id}
+                  className="border-t border-gray-200 hover:bg-gray-50 transition"
+                >
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {agent.id}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                    {agent.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {agent.email}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-[#336699]/10 text-[#336699]">
+                      {agent.agent_type}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6  flex justify-start  gap-3">
+                    <button
+                      className="cursor-pointer text-gray-600 hover:text-gray-800"
+                      onClick={() => {
+                        setSelectedRecord(agent);
+                        setAgentModalMode("edit");
+                        setOpenAgentModal(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      className="cursor-pointer text-red-600 hover:text-red-800"
+                      onClick={() => {
+                        setSelectedRecord(agent);
+                        setOpenDeleteModal(true);
+                      }}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="px-4 py-3 text-center text-sm text-gray-500"
+                >
+                  No agents found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
