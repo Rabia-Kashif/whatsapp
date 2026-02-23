@@ -28,7 +28,7 @@ const AdminLayoutSidebar = ({ onClose }) => {
     <div className="h-full w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
       {/* Logo */}
       <div className="flex items-center justify-between py-4 px-5 border-b border-gray-100">
-        <p className="text-lg font-semibold text-gray-700">FSD Monitoring</p>
+        <p className="text-lg font-semibold text-gray-700">Hello FSD</p>
 
         {onClose && (
           <button

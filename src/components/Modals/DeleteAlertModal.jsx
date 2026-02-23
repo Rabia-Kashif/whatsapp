@@ -3,7 +3,7 @@ const DeleteAlertModal = ({ onClose, onDelete, isDeleting }) => {
     <div className="flex items-center justify-center h-screen max-lg:text-sm">
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 xl:w-[28vw] lg:w-[42vw] md:w-[52vw] w-[90vw] h-auto p-8 rounded-2xl bg-white ">
         <h1 className="text-center mb-6 text-lg lg:text-2xl font-[500]">
-          Are you sure you want to close session?
+          Are you sure you want to delete record?
         </h1>
         <div className="flex flex-row justify-center">
           <button

@@ -40,7 +40,7 @@ export const useWebSocketConnection = () => {
 
           try {
             const message = JSON.parse(event.data);
-            console.log("📩 WebSocket Message:", message);
+            // console.log("📩 WebSocket Message:", message);
 
             if (message.type === "new_message") {
               setWebsocketClientMessage(message.data);

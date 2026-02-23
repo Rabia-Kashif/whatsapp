@@ -33,7 +33,7 @@ const DashboardLayout = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <p className="text-lg font-semibold text-gray-700">FSD Monitoring</p>
+          <p className="text-lg font-semibold text-gray-700">Hello FSD</p>
           <button
             onClick={() => setOpen(!open)}
             className="p-2 rounded-md hover:bg-gray-100 transition"

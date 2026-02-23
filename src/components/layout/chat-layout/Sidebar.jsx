@@ -51,7 +51,7 @@ const ChatDashboardSidebar = ({ onClose }) => {
   return (
     <div className="relative h-screen w-64 lg:w-auto flex flex-col  bg-bg border-r border-border">
       <div className="flex items-center justify-between py-4 px-5 border-b">
-        <p className="text-lg font-semibold text-text">FSD Monitoring</p>
+        <p className="text-lg font-semibold text-text">Hello FSD</p>
 
         {onClose && (
           <button
