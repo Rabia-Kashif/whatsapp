@@ -149,20 +149,24 @@ const ChatDashboardSidebar = ({ onClose }) => {
         )}
       </div>
       {/* Header */}
-      <div className="absolute bottom-0 w-full h-16 px-4 flex items-center justify-between text-text border-t border-border bg-bg">
-        <div className="flex items-center gap-2 max-lg:text-sm ">
+      <div className="absolute bottom-0 w-full px-2 h-16 flex items-center justify-between text-text border-t border-border bg-bg">
+        <div className="flex items-center gap-2 max-lg:text-sm">
           <span className="rounded-full overflow-hidden text-text bg-chat-client border border-border p-2">
-            {" "}
             {faIcons.FaUser}
-          </span>{" "}
-          {localStorage.getItem("email")}
-        </div>
+          </span>
 
+          <p
+            className="min-w-0 max-w-[180px] truncate cursor-pointer"
+            title={localStorage.getItem("email")}
+          >
+            {localStorage.getItem("email")}
+          </p>
+        </div>
         <div className="whitespace-nowrap">
           <button
             onClick={() => setIsLogout(true)}
             title="Logout"
-            className="flex items-center gap-2 px-4 py-2 text-sm lg:text-xl rounded-md text-text cursor-pointer"
+            className="px-4 py-2 text-sm lg:text-xl rounded-md text-text cursor-pointer"
           >
             {piIcons.PiSignOutFill}
           </button>
