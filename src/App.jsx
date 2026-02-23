@@ -7,34 +7,34 @@ import ChatLayout from "./components/layout/chat-layout/ChatLayout";
 import ChatDashboard from "./pages/ChatDashbaord";
 import DashboardLayout from "./components/layout/admin-layout/DashboardLayout";
 import Agents from "./modules/Agents/pages/Agents";
+const ProtectedRoute = ({ children, allowedRole }) => {
+  const token = localStorage.getItem("auth_token");
+  const role = localStorage.getItem("role");
+
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (allowedRole && role !== allowedRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+const RedirectToDashboard = () => {
+  const token = localStorage.getItem("auth_token");
+  const role = localStorage.getItem("role");
+
+  if (token) {
+    if (role === "admin") {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
+    return <Navigate to="/chat-dashboard" replace />;
+  }
+
+  return <Login />;
+};
 function App() {
-  const ProtectedRoute = ({ children, allowedRole }) => {
-    const token = localStorage.getItem("auth_token");
-    const role = localStorage.getItem("role");
-
-    if (!token) {
-      return <Navigate to="/" replace />;
-    }
-
-    if (allowedRole && role !== allowedRole) {
-      return <Navigate to="/" replace />;
-    }
-
-    return children;
-  };
-  const RedirectToDashboard = () => {
-    const token = localStorage.getItem("auth_token");
-    const role = localStorage.getItem("role");
-
-    if (token) {
-      if (role === "admin") {
-        return <Navigate to="/admin-dashboard" replace />;
-      }
-      return <Navigate to="/chat-dashboard" replace />;
-    }
-
-    return <Login />;
-  };
   return (
     <QueryProvider>
       <BrowserRouter>
