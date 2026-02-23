@@ -23,8 +23,15 @@ API.interceptors.response.use(
             setTimeout(() => {
                 window.location.href = "/";
             }, 5000);
-            return Promise.reject({ message: "Unauthorized! Redirecting to login..." });
+
+            return Promise.reject(
+                error.response?.data?.detail ||
+                { message: "Unauthorized! Redirecting to login..." }
+            );
         }
+
+        // IMPORTANT — always reject other errors
+        return Promise.reject(error);
     }
-)
+);
 export default API;

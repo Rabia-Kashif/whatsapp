@@ -27,7 +27,7 @@ export const useCreateAgent = () => {
         mutationFn: async (payload) => {
             try {
                 const response = await agentService.createAgent(payload);
-                return response.data;
+                return response?.data;
             }
             catch (error) {
                 if (error.response) {
@@ -49,7 +49,7 @@ export const useDeleteAgent = () => {
         mutationFn: async (agentId) => {
             try {
                 const response = await agentService.deleteAgent(agentId);
-                return response.data;
+                return response?.data;
             }
             catch (error) {
                 if (error.response) {
@@ -71,7 +71,7 @@ export const useUpdateAgent = () => {
         mutationFn: async ({ agentId, payload }) => {
             try {
                 const response = await agentService.updateAgent(agentId, payload);
-                return response.data;
+                return response?.data;
             }
             catch (error) {
                 if (error.response) {

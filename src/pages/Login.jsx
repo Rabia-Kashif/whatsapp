@@ -37,7 +37,6 @@ const Login = () => {
     if (event) event.preventDefault();
 
     setFormError("");
-    console.log("Form Data: ", data, loginType);
     const mutationFn = loginType === "agent" ? agentLogin : adminLogin;
 
     if (!mutationFn) return;
@@ -52,7 +51,7 @@ const Login = () => {
               if (loginType === "agent") {
                 setClientId(null);
                 navigate("/chat-dashboard");
-              } else {
+              } else if (loginType === "admin") {
                 navigate("/admin-dashboard");
               }
             },
@@ -60,15 +59,9 @@ const Login = () => {
         );
       },
       onError: (error) => {
-        if (error?.response?.status === 401) {
-          setFormError(
-            error || "Incorrect email or password. Please try again.",
-          );
-        } else if (error?.response?.status === 500) {
-          setFormError("Server error. Please try again later.");
-        } else {
-          setFormError("Something went wrong. Please try again.");
-        }
+        const message =
+          error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.";
+        setFormError(message);
       },
     });
   };
@@ -144,7 +137,7 @@ const Login = () => {
             </div>
           </div>
           {formError && (
-            <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-3 mb-3 rounded-md text-sm">
               {formError}
             </div>
           )}
